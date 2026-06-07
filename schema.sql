@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     nama VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL DEFAULT '',
     no_hp VARCHAR(20),
     tipe_user VARCHAR(50),
     nrp VARCHAR(50),

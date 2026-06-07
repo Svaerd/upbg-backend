@@ -1,0 +1,132 @@
+{% extends "base.html" %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-md-10">
+    <div class="auth-panel rounded-4 p-4 p-lg-5">
+      <div class="mb-4">
+        <p class="text-uppercase text-secondary fw-semibold mb-1">Daftar</p>
+        <h1 class="h3 fw-bold mb-0">Buat akun baru</h1>
+      </div>
+
+      <form method="post" class="row g-3">
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerName"
+              type="text"
+              name="nama"
+              placeholder="Nama lengkap"
+              required
+            />
+            <label for="registerName">Nama lengkap</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerEmail"
+              type="email"
+              name="email"
+              placeholder="name@example.com"
+              required
+            />
+            <label for="registerEmail">Email</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerPhone"
+              type="tel"
+              name="no_hp"
+              placeholder="08123456789"
+            />
+            <label for="registerPhone">Nomor HP</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <select class="form-select" id="registerType" name="tipe_user">
+              <option value="">Pilih tipe pengguna</option>
+              <option value="mahasiswa">Mahasiswa</option>
+              <option value="umum">Umum</option>
+            </select>
+            <label for="registerType">Tipe pengguna</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerNrp"
+              type="text"
+              name="nrp"
+              placeholder="NRP"
+            />
+            <label for="registerNrp">NRP / NIP</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerInstansi"
+              type="text"
+              name="instansi"
+              placeholder="Instansi"
+            />
+            <label for="registerInstansi">Instansi</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerPassword"
+              type="password"
+              name="password"
+              placeholder="Password"
+              required
+            />
+            <label for="registerPassword">Password</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input
+              class="form-control"
+              id="registerPasswordConfirmation"
+              type="password"
+              name="password_confirmation"
+              placeholder="Konfirmasi password"
+              required
+            />
+            <label for="registerPasswordConfirmation"
+              >Konfirmasi password</label
+            >
+          </div>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-dark btn-lg w-100" type="submit">
+            Buat akun
+          </button>
+        </div>
+      </form>
+
+      <p class="mt-3 mb-0 text-secondary">
+        Sudah punya akun? <a href="{{ url_for('login') }}">Masuk di sini</a>.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

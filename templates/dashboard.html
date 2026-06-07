@@ -1,0 +1,72 @@
+{% extends "base.html" %} {% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div
+      class="hero-panel rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3"
+    >
+      <div>
+        <span class="badge accent-pill rounded-pill mb-3"
+          >Dashboard pengguna</span
+        >
+        <h1 class="h3 fw-bold mb-2">Selamat datang, {{ current_user.nama }}</h1>
+        <p class="text-secondary mb-0">
+          Akun ini siap dipakai untuk pendaftaran tes, pembayaran, dan hasil
+          sertifikat.
+        </p>
+      </div>
+      <div class="text-lg-end">
+        <div class="fw-semibold">{{ current_user.email }}</div>
+        <div class="text-secondary">
+          {{ current_user.tipe_user or 'Tipe pengguna belum diisi' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-3">
+    <div class="stats-panel rounded-4 p-4 h-100">
+      <div class="text-secondary">Registrasi</div>
+      <div class="display-6 fw-bold mb-0">{{ registration_count }}</div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-3">
+    <div class="stats-panel rounded-4 p-4 h-100">
+      <div class="text-secondary">Pembayaran</div>
+      <div class="display-6 fw-bold mb-0">{{ payment_count }}</div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="stats-panel rounded-4 p-4 h-100">
+      <h2 class="h5 fw-bold mb-3">Jadwal terbaru</h2>
+      {% if upcoming_schedules %}
+      <div class="vstack gap-3">
+        {% for schedule in upcoming_schedules %}
+        <div class="border rounded-3 p-3 bg-white">
+          <div class="d-flex justify-content-between gap-3">
+            <div>
+              <div class="fw-semibold">{{ schedule.nama_tes }}</div>
+              <div class="text-secondary">
+                {{ schedule.tanggal }} | {{ schedule.jam_mulai }} - {{
+                schedule.jam_selesai }}
+              </div>
+            </div>
+            <span class="badge text-bg-secondary align-self-start"
+              >{{ schedule.registration_status or 'terdaftar' }}</span
+            >
+          </div>
+          <div class="text-secondary mt-2">{{ schedule.lokasi }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-secondary mb-0">
+        Belum ada registrasi tes. Fitur jadwal akan muncul setelah akun mulai
+        dipakai.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

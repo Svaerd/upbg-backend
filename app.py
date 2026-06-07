@@ -1,9 +1,23 @@
 import os
+from functools import wraps
+
 import pymysql
+from flask import (
+    Flask,
+    flash,
+    g,
+    current_app,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from pymysql.cursors import DictCursor
-from flask import Flask, render_template, g, current_app
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
 
 # Configure your MySQL connection parameters
 app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST', 'localhost')
@@ -22,6 +36,61 @@ def get_db():
             cursorclass=DictCursor
         )
     return g.db
+
+
+def fetch_one(query, params=None):
+    connection = get_db()
+    with connection.cursor() as cursor:
+        cursor.execute(query, params or ())
+        return cursor.fetchone()
+
+
+def fetch_all(query, params=None):
+    connection = get_db()
+    with connection.cursor() as cursor:
+        cursor.execute(query, params or ())
+        return cursor.fetchall()
+
+
+def execute_query(query, params=None, commit=False):
+    connection = get_db()
+    with connection.cursor() as cursor:
+        cursor.execute(query, params or ())
+    if commit:
+        connection.commit()
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if g.user is None:
+            flash('Silakan login terlebih dahulu.', 'warning')
+            return redirect(url_for('login'))
+        return view(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.before_request
+def load_current_user():
+    user_id = session.get('user_id')
+    if user_id is None:
+        g.user = None
+        return
+
+    g.user = fetch_one(
+        """
+        SELECT user_id, nama, email, no_hp, tipe_user, nrp, instansi, created_at, password_hash
+        FROM users
+        WHERE user_id = %s
+        """,
+        (user_id,),
+    )
+
+
+@app.context_processor
+def inject_current_user():
+    return {'current_user': getattr(g, 'user', None)}
 
 @app.teardown_appcontext
 def close_db(error):
@@ -42,7 +111,7 @@ def init_db():
     )
     
     try:
-        with connection.cursor() as cursor:
+        with connection.cursor(DictCursor) as cursor:
             # Read the raw SQL file
             with open('schema.sql', 'r') as f:
                 sql_script = f.read()
@@ -54,6 +123,22 @@ def init_db():
                 # Execute only if the command is not an empty string
                 if command.strip():
                     cursor.execute(command)
+
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS column_count
+                FROM information_schema.columns
+                WHERE table_schema = %s
+                  AND table_name = 'users'
+                  AND column_name = 'password_hash'
+                """,
+                (app.config['MYSQL_DB'],),
+            )
+            column_count = cursor.fetchone()['column_count']
+            if column_count == 0:
+                cursor.execute(
+                    "ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT '' AFTER email"
+                )
                     
         connection.commit()
         print("Database initialized successfully.")
@@ -64,8 +149,136 @@ def init_db():
 
 @app.route('/')
 def home():
-    # Example route logic
+    if g.user is not None:
+        return redirect(url_for('dashboard'))
     return render_template('home.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if g.user is not None:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        nama = request.form.get('nama', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        password_confirmation = request.form.get('password_confirmation', '')
+        no_hp = request.form.get('no_hp', '').strip() or None
+        tipe_user = request.form.get('tipe_user', '').strip() or None
+        nrp = request.form.get('nrp', '').strip() or None
+        instansi = request.form.get('instansi', '').strip() or None
+
+        if not nama or not email or not password:
+            flash('Nama, email, dan password wajib diisi.', 'danger')
+            return render_template('register.html')
+
+        if password != password_confirmation:
+            flash('Konfirmasi password tidak cocok.', 'danger')
+            return render_template('register.html')
+
+        existing_user = fetch_one(
+            'SELECT user_id FROM users WHERE email = %s',
+            (email,),
+        )
+        if existing_user is not None:
+            flash('Email sudah terdaftar. Silakan login.', 'warning')
+            return redirect(url_for('login'))
+
+        password_hash = generate_password_hash(password)
+        execute_query(
+            """
+            INSERT INTO users (nama, email, password_hash, no_hp, tipe_user, nrp, instansi)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (nama, email, password_hash, no_hp, tipe_user, nrp, instansi),
+            commit=True,
+        )
+
+        new_user = fetch_one(
+            'SELECT user_id, nama FROM users WHERE email = %s',
+            (email,),
+        )
+        session.clear()
+        session['user_id'] = new_user['user_id']
+        flash('Akun berhasil dibuat.', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if g.user is not None:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+
+        user = fetch_one(
+            """
+            SELECT user_id, nama, email, password_hash
+            FROM users
+            WHERE email = %s
+            """,
+            (email,),
+        )
+
+        if user is None or not user['password_hash'] or not check_password_hash(user['password_hash'], password):
+            flash('Email atau password salah.', 'danger')
+            return render_template('login.html')
+
+        session.clear()
+        session['user_id'] = user['user_id']
+        flash(f"Selamat datang, {user['nama']}.", 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('login.html')
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    flash('Kamu sudah logout.', 'info')
+    return redirect(url_for('home'))
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    registration_count = fetch_one(
+        'SELECT COUNT(*) AS total FROM registrations WHERE user_id = %s',
+        (g.user['user_id'],),
+    )
+    payment_count = fetch_one(
+        """
+        SELECT COUNT(*) AS total
+        FROM payments p
+        INNER JOIN registrations r ON r.registration_id = p.registration_id
+        WHERE r.user_id = %s
+        """,
+        (g.user['user_id'],),
+    )
+    upcoming_schedules = fetch_all(
+        """
+        SELECT s.schedule_id, s.tanggal, s.jam_mulai, s.jam_selesai, s.lokasi, tt.nama_tes, r.status AS registration_status
+        FROM registrations r
+        INNER JOIN schedules s ON s.schedule_id = r.schedule_id
+        INNER JOIN test_types tt ON tt.test_type_id = s.test_type_id
+        WHERE r.user_id = %s
+        ORDER BY s.tanggal DESC, s.jam_mulai DESC
+        LIMIT 5
+        """,
+        (g.user['user_id'],),
+    )
+
+    return render_template(
+        'dashboard.html',
+        registration_count=registration_count['total'],
+        payment_count=payment_count['total'],
+        upcoming_schedules=upcoming_schedules,
+    )
 
 if __name__ == '__main__':
     print("  _    _ _____  ____   _____   _______ ____  ______ ______ _      ")

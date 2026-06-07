@@ -16,11 +16,59 @@
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
       crossorigin="anonymous"
     ></script>
+    <style>
+      :root {
+        --bg-start: #101828;
+        --bg-end: #1f2937;
+        --accent: #f97316;
+        --accent-soft: #fff7ed;
+      }
+
+      body {
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(249, 115, 22, 0.12),
+            transparent 30%
+          ),
+          linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        min-height: 100vh;
+      }
+
+      .app-navbar {
+        background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+      }
+
+      .brand-badge {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        padding: 0.4rem 0.9rem;
+      }
+
+      .hero-panel,
+      .auth-panel,
+      .stats-panel {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      }
+
+      .accent-pill {
+        background: var(--accent-soft);
+        color: #9a3412;
+      }
+    </style>
   </head>
-  <bo   dy>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
       <div class="container">
-        <a class="navbar-brand" href="{{ url_for('home') }}">Tes TOEFL</a>
+        <a
+          class="navbar-brand fw-semibold brand-badge"
+          href="{{ url_for('home') }}"
+          >Tes TOEFL</a
+        >
         <button
           class="navbar-toggler"
           type="button"
@@ -34,15 +82,41 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
           <div class="navbar-nav ms-auto">
-            <a class="nav-link active" aria-current="page" href="{{ url_for('home') }}">Home</a>
-            <!-- <a class="nav-link" href="#">Features</a> -->
+            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+            {% if current_user %}
+            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+            <form
+              class="d-inline"
+              action="{{ url_for('logout') }}"
+              method="post"
+            >
+              <button
+                class="btn btn-sm btn-outline-light ms-lg-2"
+                type="submit"
+              >
+                Logout
+              </button>
+            </form>
+            {% else %}
+            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+            {% endif %}
           </div>
         </div>
       </div>
     </nav>
 
-    <div class="container mt-4">
-        {% block content %}{% endblock %}
+    <div class="container py-4 py-lg-5">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="mb-4">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2" role="alert">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
     </div>
   </body>
 </html>
