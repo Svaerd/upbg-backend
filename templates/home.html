@@ -1,6 +1,56 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
 
-{% block content %}
-    <h1>Welcome to the TOEFL Test</h1>
-    <p>This is a simple Flask app for the TOEFL test.</p>
+<div class="container col-xl-10 col-xxl-8 px-4 py-5">
+  <div class="row align-items-center g-lg-5 py-5">
+    <div class="col-lg-7 text-center text-lg-start">
+      <h1
+        class="display-4 fw-bold lh-1 text-body-emphasis mb-3"
+        id="typed"
+      ></h1>
+      <p class="col-lg-10 fs-5">
+        Tes TOEFL adalah tes standar yang digunakan untuk mengukur kemampuan
+        bahasa Inggris seseorang. Tes ini biasanya digunakan untuk keperluan
+        akademik, seperti masuk universitas atau mendapatkan beasiswa.
+        <br /><br />
+        Dengan mengikuti tes TOEFL, kamu bisa mengetahui sejauh mana kemampuan
+        bahasa Inggrismu dan mempersiapkan diri untuk menghadapi tantangan
+        akademik di masa depan.
+      </p>
+    </div>
+    <div class="col-md-10 mx-auto col-lg-5">
+      <form class="p-4 p-md-5 border rounded-3 bg-body-tertiary">
+        <div class="form-floating mb-3">
+          <input
+            type="text"
+            class="form-control"
+            id="floatingInput"
+            placeholder="Rafa"
+          />
+          <label for="floatingInput">Nama</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input
+            type="number"
+            class="form-control"
+            id="floatingPassword"
+            placeholder="081234567890"
+          />
+          <label for="floatingPassword">Nomor Telepon</label>
+        </div>
+        <button class="w-100 btn btn-lg btn-primary" type="submit">
+          Mulai Tes
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  var typed = new Typed("#typed", {
+    strings: ["Mulai tes TOEFL-mu sekarang!"],
+    typeSpeed: 30,
+    showCursor: false,
+  });
+</script>
 {% endblock %}
