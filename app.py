@@ -16,6 +16,8 @@ from flask import (
 from pymysql.cursors import DictCursor
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import query
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
 
@@ -93,11 +95,7 @@ def load_current_user():
         return
 
     g.user = fetch_one(
-        """
-        SELECT user_id, nama, email, no_hp, tipe_user, nrp, instansi, created_at, password_hash
-        FROM users
-        WHERE user_id = %s
-        """,
+        query.GET_USER_BY_ID,
         (user_id,),
     )
 
@@ -192,7 +190,7 @@ def register():
             return render_template('register.html')
 
         existing_user = fetch_one(
-            'SELECT user_id FROM users WHERE email = %s',
+            query.GET_USER_BY_EMAIL,
             (email,),
         )
         if existing_user is not None:
@@ -201,16 +199,13 @@ def register():
 
         password_hash = generate_password_hash(password)
         execute_query(
-            """
-            INSERT INTO users (nama, email, password_hash, no_hp, tipe_user, nrp, instansi)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
+            query.INSERT_USER,
             (nama, email, password_hash, no_hp, tipe_user, nrp, instansi),
             commit=True,
         )
 
         new_user = fetch_one(
-            'SELECT user_id, nama FROM users WHERE email = %s',
+            query.GET_USER_BY_EMAIL,
             (email,),
         )
         session.clear()
@@ -231,11 +226,7 @@ def login():
         password = request.form.get('password', '')
 
         user = fetch_one(
-            """
-            SELECT user_id, nama, email, password_hash
-            FROM users
-            WHERE email = %s
-            """,
+            query.GET_USER_BY_EMAIL,
             (email,),
         )
 
@@ -262,28 +253,15 @@ def logout():
 @login_required
 def dashboard():
     registration_count = fetch_one(
-        'SELECT COUNT(*) AS total FROM registrations WHERE user_id = %s',
+        query.COUNT_REGISTRATIONS_BY_USER_ID,
         (g.user['user_id'],),
     )
     payment_count = fetch_one(
-        """
-        SELECT COUNT(*) AS total
-        FROM payments p
-        INNER JOIN registrations r ON r.registration_id = p.registration_id
-        WHERE r.user_id = %s
-        """,
+        query.COUNT_PAYMENTS_BY_USER_ID,
         (g.user['user_id'],),
     )
     upcoming_schedules = fetch_all(
-        """
-        SELECT s.schedule_id, s.tanggal, s.jam_mulai, s.jam_selesai, s.lokasi, tt.nama_tes, r.status AS registration_status
-        FROM registrations r
-        INNER JOIN schedules s ON s.schedule_id = r.schedule_id
-        INNER JOIN test_types tt ON tt.test_type_id = s.test_type_id
-        WHERE r.user_id = %s
-        ORDER BY s.tanggal DESC, s.jam_mulai DESC
-        LIMIT 5
-        """,
+        query.GET_UPCOMING_SCHEDULES_BY_USER_ID,
         (g.user['user_id'],),
     )
 
