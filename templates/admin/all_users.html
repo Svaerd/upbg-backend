@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="hero-panel rounded-4 p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h5 fw-bold mb-0">Daftar Semua Pengguna</h2>
+      </div>
+
+      {% if users %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#ID</th>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>No. HP</th>
+              <th>Informasi</th>
+              <th>Peran</th>
+              <th>Terdaftar</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td class="text-secondary">{{ u.user_id }}</td>
+              <td class="fw-semibold">{{ u.nama }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.no_hp or '-' }}</td>
+              <td>
+                <div class="small text-secondary">
+                  NRP: {{ u.nrp or '-' }} <br>
+                  Instansi: {{ u.instansi or '-' }}
+                </div>
+              </td>
+              <td>
+                {% if u.tipe_user == 'admin' %}
+                  <span class="badge text-bg-dark">Admin</span>
+                {% else %}
+                  <span class="badge bg-light text-dark border">User</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ u.created_at }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-secondary" type="button" disabled title="Fitur kelola pengguna belum diimplementasi">Kelola</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <p class="text-secondary mb-0">Belum ada data pengguna ditemukan di sistem.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
