@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="auth-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Tambah Jadwal</h2>
+      <form method="post">
+        <div class="form-floating mb-3">
+          <select class="form-select" id="test_type_id" name="test_type_id" required>
+            <option value="">Pilih tipe tes</option>
+            {% for t in test_types %}
+            <option value="{{ t.test_type_id }}">{{ t.nama_tes }}</option>
+            {% endfor %}
+          </select>
+          <label for="test_type_id">Tipe Tes</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="tanggal" type="date" name="tanggal" required />
+          <label for="tanggal">Tanggal</label>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="form-floating">
+              <input class="form-control" id="jam_mulai" type="time" name="jam_mulai" required />
+              <label for="jam_mulai">Jam Mulai</label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="form-floating">
+              <input class="form-control" id="jam_selesai" type="time" name="jam_selesai" required />
+              <label for="jam_selesai">Jam Selesai</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="lokasi" type="text" name="lokasi" placeholder="Lokasi" />
+          <label for="lokasi">Lokasi</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="kuota" type="number" name="kuota" placeholder="Kuota" value="0" />
+          <label for="kuota">Kuota</label>
+        </div>
+        <div class="form-floating mb-3">
+          <select class="form-select" id="status" name="status">
+            <option value="TERSEDIA" selected>TERSEDIA</option>
+            <option value="PENUH">PENUH</option>
+            <option value="SELESAI">SELESAI</option>
+          </select>
+          <label for="status">Status</label>
+        </div>
+        <button class="btn btn-dark btn-lg w-100" type="submit">Simpan</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="hero-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Daftar Jadwal</h2>
+      {% if schedules %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Tipe Tes</th>
+              <th>Tanggal</th>
+              <th>Jam</th>
+              <th>Lokasi</th>
+              <th>Kuota</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in schedules %}
+            <tr>
+              <td>{{ s.schedule_id }}</td>
+              <td class="fw-semibold">{{ s.nama_tes }}</td>
+              <td>{{ s.tanggal }}</td>
+              <td>{{ s.jam_mulai }} - {{ s.jam_selesai }}</td>
+              <td>{{ s.lokasi or '-' }}</td>
+              <td>{{ s.kuota }}</td>
+              <td>
+                <span class="badge {% if s.status == 'TERSEDIA' %}text-bg-success{% elif s.status == 'PENUH' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">
+                  {{ s.status }}
+                </span>
+              </td>
+              <td>
+                <form action="{{ url_for('delete_schedule', id=s.schedule_id) }}" method="post" onsubmit="return confirm('Hapus jadwal ini?')">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-secondary mb-0">Belum ada jadwal. Tambahkan melalui form di samping.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

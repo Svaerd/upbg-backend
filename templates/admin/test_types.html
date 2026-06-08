@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="auth-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Tambah Tipe Tes</h2>
+      <form method="post">
+        <div class="form-floating mb-3">
+          <input class="form-control" id="nama_tes" type="text" name="nama_tes" placeholder="Nama tes" required />
+          <label for="nama_tes">Nama Tes</label>
+        </div>
+        <div class="form-floating mb-3">
+          <textarea class="form-control" id="deskripsi" name="deskripsi" placeholder="Deskripsi" style="min-height:100px"></textarea>
+          <label for="deskripsi">Deskripsi</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="harga" type="number" step="0.01" name="harga" placeholder="Harga" value="0" />
+          <label for="harga">Harga (Rp)</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="masa_berlaku" type="number" name="masa_berlaku_sertifikat" placeholder="Masa berlaku" value="24" />
+          <label for="masa_berlaku">Masa Berlaku Sertifikat (bulan)</label>
+        </div>
+        <button class="btn btn-dark btn-lg w-100" type="submit">Simpan</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="hero-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Daftar Tipe Tes</h2>
+      {% if test_types %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Nama Tes</th>
+              <th>Deskripsi</th>
+              <th>Harga</th>
+              <th>Masa Berlaku</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in test_types %}
+            <tr>
+              <td>{{ t.test_type_id }}</td>
+              <td class="fw-semibold">{{ t.nama_tes }}</td>
+              <td>{{ t.deskripsi or '-' }}</td>
+              <td>Rp {{ "{:,.0f}".format(t.harga|float) }}</td>
+              <td>{{ t.masa_berlaku_sertifikat }} bln</td>
+              <td>
+                <form action="{{ url_for('delete_test_type', id=t.test_type_id) }}" method="post" onsubmit="return confirm('Hapus tipe tes ini? Semua jadwal terkait juga akan terhapus.')">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-secondary mb-0">Belum ada tipe tes. Tambahkan melalui form di samping.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

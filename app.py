@@ -71,6 +71,20 @@ def login_required(view):
     return wrapped_view
 
 
+def admin_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if g.user is None:
+            flash('Silakan login terlebih dahulu.', 'warning')
+            return redirect(url_for('login'))
+        if g.user.get('tipe_user') != 'admin':
+            flash('Akses ditolak. Fitur ini khusus untuk Admin UPBG.', 'danger')
+            return redirect(url_for('dashboard'))
+        return view(*args, **kwargs)
+
+    return wrapped_view
+
+
 @app.before_request
 def load_current_user():
     user_id = session.get('user_id')
@@ -279,6 +293,96 @@ def dashboard():
         payment_count=payment_count['total'],
         upcoming_schedules=upcoming_schedules,
     )
+
+@app.route('/admin/test-types', methods=['GET', 'POST'])
+@admin_required
+def manage_test_types():
+    if request.method == 'POST':
+        nama_tes = request.form.get('nama_tes', '').strip()
+        deskripsi = request.form.get('deskripsi', '').strip()
+        harga = request.form.get('harga', 0)
+        masa_berlaku = request.form.get('masa_berlaku_sertifikat', 24)
+
+        if not nama_tes:
+            flash('Nama tes wajib diisi.', 'danger')
+        else:
+            execute_query(
+                """
+                INSERT INTO test_types (nama_tes, deskripsi, harga, masa_berlaku_sertifikat)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (nama_tes, deskripsi, harga, masa_berlaku),
+                commit=True,
+            )
+            flash('Tipe tes berhasil ditambahkan!', 'success')
+            return redirect(url_for('manage_test_types'))
+
+    test_types = fetch_all(
+        "SELECT * FROM test_types ORDER BY test_type_id DESC"
+    )
+    return render_template('admin/test_types.html', test_types=test_types)
+
+
+@app.route('/admin/test-types/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_test_type(id):
+    execute_query(
+        "DELETE FROM test_types WHERE test_type_id = %s", (id,), commit=True
+    )
+    flash('Tipe tes berhasil dihapus.', 'info')
+    return redirect(url_for('manage_test_types'))
+
+
+@app.route('/admin/schedules', methods=['GET', 'POST'])
+@admin_required
+def manage_schedules():
+    if request.method == 'POST':
+        test_type_id = request.form.get('test_type_id')
+        tanggal = request.form.get('tanggal')
+        jam_mulai = request.form.get('jam_mulai')
+        jam_selesai = request.form.get('jam_selesai')
+        lokasi = request.form.get('lokasi', '').strip()
+        kuota = request.form.get('kuota', 0)
+        status = request.form.get('status', 'TERSEDIA')
+
+        execute_query(
+            """
+            INSERT INTO schedules (test_type_id, tanggal, jam_mulai, jam_selesai, lokasi, kuota, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (test_type_id, tanggal, jam_mulai, jam_selesai, lokasi, kuota, status),
+            commit=True,
+        )
+        flash('Jadwal ujian berhasil ditambahkan!', 'success')
+        return redirect(url_for('manage_schedules'))
+
+    schedules = fetch_all(
+        """
+        SELECT s.schedule_id, s.tanggal, s.jam_mulai, s.jam_selesai, s.lokasi, s.kuota, s.status, t.nama_tes
+        FROM schedules s
+        JOIN test_types t ON s.test_type_id = t.test_type_id
+        ORDER BY s.tanggal DESC, s.jam_mulai DESC
+        """
+    )
+    test_types_dropdown = fetch_all(
+        "SELECT test_type_id, nama_tes FROM test_types"
+    )
+    return render_template(
+        'admin/schedules.html',
+        schedules=schedules,
+        test_types=test_types_dropdown,
+    )
+
+
+@app.route('/admin/schedules/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_schedule(id):
+    execute_query(
+        "DELETE FROM schedules WHERE schedule_id = %s", (id,), commit=True
+    )
+    flash('Jadwal tes berhasil dihapus.', 'info')
+    return redirect(url_for('manage_schedules'))
+
 
 if __name__ == '__main__':
     print("  _    _ _____  ____   _____   _______ ____  ______ ______ _      ")
