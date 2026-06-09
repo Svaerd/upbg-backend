@@ -3,34 +3,17 @@
 <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
 
 <div class="row align-items-center g-4 g-lg-5">
-  <div class="col-lg-7">
+  <div class="col-12">
     <div class="hero-panel rounded-4 p-4 p-lg-5">
       <span class="badge accent-pill rounded-pill mb-3">UPBG TOEFL Platform</span>
       <h1 class="display-4 fw-bold lh-1 mb-3" id="typed"></h1>
       <p class="fs-5 text-secondary mb-4">
         Kelola pendaftaran, jadwal tes, pembayaran, hasil, dan sertifikat dalam satu alur yang rapi.
-        Mulai dari akun pengguna, lalu lanjut ke fitur operasional berikutnya.
+        Permudah dengan tes TOEFL online yang bisa diakses kapan saja, di mana saja.
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-dark btn-lg" href="{{ url_for('register') }}">Buat akun</a>
         <a class="btn btn-outline-dark btn-lg" href="{{ url_for('login') }}">Masuk</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-5">
-    <div class="auth-panel rounded-4 p-4 p-lg-5">
-      <h2 class="h4 fw-bold mb-3">Kenapa mulai dari autentikasi</h2>
-      <div class="vstack gap-3">
-        <div class="p-3 rounded-3 bg-light border">
-          Setiap pengguna punya sesi login sendiri agar data pendaftaran dan hasil tes tetap terpisah.
-        </div>
-        <div class="p-3 rounded-3 bg-light border">
-          Password disimpan sebagai hash, bukan teks biasa.
-        </div>
-        <div class="p-3 rounded-3 bg-light border">
-          Struktur ini siap dipakai untuk dashboard, registrasi ujian, dan fitur admin berikutnya.
-        </div>
       </div>
     </div>
   </div>
@@ -39,11 +22,8 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     var typed = new Typed("#typed", {
-      strings: ["Mulai tes TOEFL-mu sekarang!", "Masuk dan kelola akunmu dengan rapi."],
-      typeSpeed: 30,
-      backSpeed: 18,
-      backDelay: 1600,
-      loop: true,
+      strings: ["Mulai tes TOEFL-mu sekarang!"],
+      typeSpeed: 50,
       showCursor: false,
     });
   });
