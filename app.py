@@ -276,6 +276,42 @@ def dashboard():
         upcoming_schedules=upcoming_schedules,
     )
 
+
+@app.route('/dashboard/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        nama = request.form.get('nama', '').strip()
+        no_hp = request.form.get('no_hp', '').strip() or None
+        nrp = request.form.get('nrp', '').strip() or None
+        instansi = request.form.get('instansi', '').strip() or None
+
+        if not nama:
+            flash('Nama wajib diisi.', 'danger')
+        else:
+            execute_query(
+                """
+                UPDATE users 
+                SET nama = %s, no_hp = %s, nrp = %s, instansi = %s 
+                WHERE user_id = %s
+                """,
+                (nama, no_hp, nrp, instansi, g.user['user_id']),
+                commit=True
+            )
+            flash('Profil berhasil diperbarui.', 'success')
+            return redirect(url_for('profile'))
+
+    return render_template('dashboard/profile.html')
+
+
+@app.route('/admin/all-user')
+@admin_required
+def admin_all_users():
+    users = fetch_all(
+        "SELECT * FROM users ORDER BY created_at DESC"
+    )
+    return render_template('admin/all_users.html', users=users)
+
 @app.route('/admin/test-types', methods=['GET', 'POST'])
 @admin_required
 def manage_test_types():

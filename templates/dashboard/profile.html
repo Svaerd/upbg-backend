@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="auth-panel rounded-4 p-4 p-lg-5">
+      <h2 class="h5 fw-bold mb-4">Profil Pengguna</h2>
+      
+      <form method="post">
+        
+        <div class="form-floating mb-3">
+          <input class="form-control text-secondary" id="email" type="email" value="{{ current_user.email }}" readonly disabled />
+          <label for="email">Email</label>
+          <div class="form-text mt-1">Email tidak dapat diubah.</div>
+        </div>
+
+        <div class="form-floating mb-3">
+          <input class="form-control" id="nama" type="text" name="nama" placeholder="Nama Lengkap" value="{{ current_user.nama }}" required />
+          <label for="nama">Nama Lengkap</label>
+        </div>
+        
+        <div class="form-floating mb-3">
+          <input class="form-control" id="no_hp" type="text" name="no_hp" placeholder="Nomor HP/WA" value="{{ current_user.no_hp or '' }}" />
+          <label for="no_hp">Nomor HP/WhatsApp</label>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-floating mb-3">
+              <input class="form-control" id="nrp" type="text" name="nrp" placeholder="NRP/NIM (opsional)" value="{{ current_user.nrp or '' }}" />
+              <label for="nrp">NRP/NIM (opsional)</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating mb-3">
+              <input class="form-control" id="instansi" type="text" name="instansi" placeholder="Instansi/Divisi (opsional)" value="{{ current_user.instansi or '' }}" />
+              <label for="instansi">Instansi/Departemen (opsional)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button class="btn btn-dark btn-lg w-100" type="submit">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
