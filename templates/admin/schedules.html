@@ -86,7 +86,8 @@
                 </span>
               </td>
               <td>
-                <form action="{{ url_for('delete_schedule', id=s.schedule_id) }}" method="post" onsubmit="return confirm('Hapus jadwal ini?')">
+                <form action="{{ url_for('delete_schedule', id=s.schedule_id) }}" method="post" onsubmit="return confirm('Hapus jadwal ini?')" class="d-inline">
+                  <a href="{{ url_for('manage_schedule_supervisors', schedule_id=s.schedule_id) }}" class="btn btn-sm btn-outline-primary">Pengawas</a>
                   <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
                 </form>
               </td>

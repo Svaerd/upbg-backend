@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="auth-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Tambah Pegawai</h2>
+      <form method="post">
+        <div class="form-floating mb-3">
+          <input class="form-control" id="nama" type="text" name="nama" placeholder="Nama" required />
+          <label for="nama">Nama Lengkap</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="email" type="email" name="email" placeholder="Email" required />
+          <label for="email">Email</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="no_hp" type="text" name="no_hp" placeholder="No HP" />
+          <label for="no_hp">No HP</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="jabatan" type="text" name="jabatan" placeholder="Jabatan" />
+          <label for="jabatan">Jabatan</label>
+        </div>
+        <button class="btn btn-dark btn-lg w-100" type="submit">Simpan</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="hero-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Daftar Pegawai</h2>
+      {% if employees %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>No HP</th>
+              <th>Jabatan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in employees %}
+            <tr>
+              <td>{{ e.employee_id }}</td>
+              <td class="fw-semibold">{{ e.nama }}</td>
+              <td>{{ e.email }}</td>
+              <td>{{ e.no_hp or '-' }}</td>
+              <td>{{ e.jabatan or '-' }}</td>
+              <td>
+                <form action="{{ url_for('delete_employee', id=e.employee_id) }}" method="post" onsubmit="return confirm('Hapus pegawai ini?')">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-secondary mb-0">Belum ada pegawai. Tambahkan melalui form di samping.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
