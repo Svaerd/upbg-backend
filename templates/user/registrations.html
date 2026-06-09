@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-panel rounded-4 p-4 p-lg-5">
+  <div class="mb-4">
+    <span class="badge accent-pill rounded-pill mb-3">Pendaftaran Saya</span>
+    <h1 class="h3 fw-bold mb-0">Riwayat Pendaftaran Tes</h1>
+  </div>
+
+  {% if registrations %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Tipe Tes</th>
+          <th>Tanggal</th>
+          <th>Jam</th>
+          <th>Lokasi</th>
+          <th>Status Registrasi</th>
+          <th>Pembayaran</th>
+          <th>Tanggal Daftar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in registrations %}
+        <tr>
+          <td class="fw-semibold">{{ r.nama_tes }}</td>
+          <td>{{ r.tanggal }}</td>
+          <td>{{ r.jam_mulai }} - {{ r.jam_selesai }}</td>
+          <td>{{ r.lokasi or '-' }}</td>
+          <td>
+            <span class="badge {% if r.registration_status == 'TERDAFTAR' %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+              {{ r.registration_status }}
+            </span>
+          </td>
+          <td>
+            {% if r.payment_status %}
+            <span class="badge {% if r.payment_status == 'LUNAS' %}text-bg-success{% elif r.payment_status == 'PENDING' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">
+              {{ r.payment_status }}
+            </span>
+            <div class="small text-secondary">{{ r.metode or '' }}</div>
+            {% else %}
+            <span class="text-secondary">-</span>
+            {% endif %}
+          </td>
+          <td class="text-secondary small">{{ r.tanggal_daftar }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <p class="text-secondary mb-0 fs-5">Kamu belum mendaftar tes apapun.</p>
+    <a href="{{ url_for('user_schedules') }}" class="btn btn-dark mt-3">Lihat Jadwal Tersedia</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

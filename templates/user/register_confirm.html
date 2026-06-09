@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="auth-panel rounded-4 p-4 p-lg-5">
+      <div class="mb-4">
+        <span class="badge accent-pill rounded-pill mb-3">Konfirmasi Pendaftaran</span>
+        <h1 class="h3 fw-bold mb-0">{{ schedule.nama_tes }}</h1>
+      </div>
+
+      <div class="vstack gap-3 mb-4">
+        <div class="border rounded-3 p-3 bg-white">
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="text-secondary small">Tanggal</div>
+              <div class="fw-semibold">{{ schedule.tanggal }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-secondary small">Waktu</div>
+              <div class="fw-semibold">{{ schedule.jam_mulai }} - {{ schedule.jam_selesai }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-secondary small">Lokasi</div>
+              <div class="fw-semibold">{{ schedule.lokasi or '-' }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-secondary small">Harga</div>
+              <div class="fw-semibold">Rp {{ "{:,.0f}".format(schedule.harga|float) }}</div>
+            </div>
+          </div>
+          {% if schedule.deskripsi %}
+          <hr />
+          <div class="text-secondary small mb-1">Deskripsi</div>
+          <div class="text-secondary">{{ schedule.deskripsi }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <form method="post">
+        <div class="form-floating mb-4">
+          <select class="form-select" id="metode" name="metode" required>
+            <option value="">Pilih metode pembayaran</option>
+            <option value="TRANSFER">Transfer Bank</option>
+            <option value="QRIS">QRIS</option>
+            <option value="TUNAL">Tunai</option>
+          </select>
+          <label for="metode">Metode Pembayaran</label>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('user_schedules') }}" class="btn btn-outline-secondary btn-lg flex-fill">Batal</a>
+          <button class="btn btn-dark btn-lg flex-fill" type="submit">Konfirmasi & Daftar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

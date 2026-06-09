@@ -54,12 +54,15 @@ def fetch_all(query, params=None):
         return cursor.fetchall()
 
 
-def execute_query(query, params=None, commit=False):
+def execute_query(query, params=None, commit=False, return_id=False):
     connection = get_db()
     with connection.cursor() as cursor:
         cursor.execute(query, params or ())
+        last_id = cursor.lastrowid if return_id else None
     if commit:
         connection.commit()
+    if return_id:
+        return last_id
 
 
 def login_required(view):
@@ -450,6 +453,119 @@ def delete_schedule_supervisor(id):
     execute_query("DELETE FROM schedule_supervisors WHERE id = %s", (id,), commit=True)
     flash('Pengawas berhasil dihapus dari jadwal.', 'info')
     return redirect(url_for('manage_schedule_supervisors', schedule_id=schedule_id))
+
+
+@app.route('/user/schedules')
+@login_required
+def user_schedules():
+    schedules = fetch_all(
+        """
+        SELECT s.*, t.nama_tes, t.harga
+        FROM schedules s
+        JOIN test_types t ON s.test_type_id = t.test_type_id
+        WHERE s.status = 'TERSEDIA' AND s.kuota > 0
+        ORDER BY s.tanggal ASC, s.jam_mulai ASC
+        """
+    )
+    return render_template('user/schedules.html', schedules=schedules)
+
+
+@app.route('/user/schedules/<int:schedule_id>/register', methods=['GET'])
+@login_required
+def user_register_form(schedule_id):
+    schedule = fetch_one(
+        """
+        SELECT s.*, t.nama_tes, t.deskripsi, t.harga, t.masa_berlaku_sertifikat
+        FROM schedules s
+        JOIN test_types t ON s.test_type_id = t.test_type_id
+        WHERE s.schedule_id = %s
+        """,
+        (schedule_id,),
+    )
+    if not schedule:
+        flash('Jadwal tidak ditemukan.', 'danger')
+        return redirect(url_for('user_schedules'))
+    if schedule['status'] != 'TERSEDIA' or schedule['kuota'] <= 0:
+        flash('Jadwal sudah tidak tersedia.', 'warning')
+        return redirect(url_for('user_schedules'))
+
+    existing = fetch_one(
+        "SELECT registration_id FROM registrations WHERE user_id = %s AND schedule_id = %s",
+        (g.user['user_id'], schedule_id),
+    )
+    if existing:
+        flash('Kamu sudah terdaftar di jadwal ini.', 'warning')
+        return redirect(url_for('user_registrations'))
+
+    return render_template('user/register_confirm.html', schedule=schedule)
+
+
+@app.route('/user/schedules/<int:schedule_id>/register', methods=['POST'])
+@login_required
+def user_register_submit(schedule_id):
+    schedule = fetch_one(
+        "SELECT * FROM schedules WHERE schedule_id = %s",
+        (schedule_id,),
+    )
+    if not schedule or schedule['status'] != 'TERSEDIA' or schedule['kuota'] <= 0:
+        flash('Jadwal sudah tidak tersedia.', 'warning')
+        return redirect(url_for('user_schedules'))
+
+    existing = fetch_one(
+        "SELECT registration_id FROM registrations WHERE user_id = %s AND schedule_id = %s",
+        (g.user['user_id'], schedule_id),
+    )
+    if existing:
+        flash('Kamu sudah terdaftar di jadwal ini.', 'warning')
+        return redirect(url_for('user_registrations'))
+
+    metode = request.form.get('metode', '').strip()
+    if not metode:
+        flash('Pilih metode pembayaran.', 'danger')
+        return redirect(url_for('user_register_form', schedule_id=schedule_id))
+
+    registration_id = execute_query(
+        "INSERT INTO registrations (user_id, schedule_id, status) VALUES (%s, %s, 'TERDAFTAR')",
+        (g.user['user_id'], schedule_id),
+        commit=True,
+        return_id=True,
+    )
+
+    execute_query(
+        "INSERT INTO payments (registration_id, jumlah, metode, status) VALUES (%s, %s, %s, 'PENDING')",
+        (registration_id, schedule.get('harga', 0), metode),
+        commit=True,
+    )
+
+    execute_query(
+        "UPDATE schedules SET kuota = kuota - 1 WHERE schedule_id = %s AND kuota > 0",
+        (schedule_id,),
+        commit=True,
+    )
+
+    flash('Pendaftaran tes berhasil! Silakan lakukan pembayaran.', 'success')
+    return redirect(url_for('user_registrations'))
+
+
+@app.route('/user/registrations')
+@login_required
+def user_registrations():
+    registrations = fetch_all(
+        """
+        SELECT r.registration_id, r.tanggal_daftar, r.status AS registration_status,
+               s.tanggal, s.jam_mulai, s.jam_selesai, s.lokasi, s.kuota,
+               t.nama_tes, t.harga,
+               p.metode, p.status AS payment_status, p.payment_id
+        FROM registrations r
+        JOIN schedules s ON r.schedule_id = s.schedule_id
+        JOIN test_types t ON s.test_type_id = t.test_type_id
+        LEFT JOIN payments p ON r.registration_id = p.registration_id
+        WHERE r.user_id = %s
+        ORDER BY r.tanggal_daftar DESC
+        """,
+        (g.user['user_id'],),
+    )
+    return render_template('user/registrations.html', registrations=registrations)
 
 
 if __name__ == '__main__':

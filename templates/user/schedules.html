@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-panel rounded-4 p-4 p-lg-5">
+  <div class="mb-4">
+    <span class="badge accent-pill rounded-pill mb-3">Jadwal Tes</span>
+    <h1 class="h3 fw-bold mb-0">Jadwal Tes Tersedia</h1>
+  </div>
+
+  {% if schedules %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Tipe Tes</th>
+          <th>Tanggal</th>
+          <th>Jam</th>
+          <th>Lokasi</th>
+          <th>Kuota</th>
+          <th>Harga</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr>
+          <td class="fw-semibold">{{ s.nama_tes }}</td>
+          <td>{{ s.tanggal }}</td>
+          <td>{{ s.jam_mulai }} - {{ s.jam_selesai }}</td>
+          <td>{{ s.lokasi or '-' }}</td>
+          <td>{{ s.kuota }}</td>
+          <td>Rp {{ "{:,.0f}".format(s.harga|float) }}</td>
+          <td>
+            <a href="{{ url_for('user_register_form', schedule_id=s.schedule_id) }}" class="btn btn-sm btn-dark">Daftar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <p class="text-secondary mb-0 fs-5">Belum ada jadwal tes tersedia saat ini.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
