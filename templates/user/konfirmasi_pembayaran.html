@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-panel rounded-4 p-4 p-lg-5 mx-auto" style="max-width: 600px;">
+  <div class="mb-4 text-center">
+    <span class="badge accent-pill rounded-pill mb-3">Konfirmasi</span>
+    <h1 class="h3 fw-bold mb-0">Konfirmasi Pembayaran</h1>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label class="form-label text-secondary fw-medium">Jumlah Tagihan</label>
+      <input type="text" class="form-control" value="Rp {{ payment.jumlah }}" disabled>
+    </div>
+    
+    <div class="mb-3">
+      <label for="metode" class="form-label text-secondary fw-medium">Metode Pembayaran</label>
+      <select name="metode" id="metode" class="form-select" required>
+        <option value="" disabled selected>Pilih Metode Pembayaran</option>
+        <option value="Transfer Bank BCA">Transfer Bank BCA</option>
+        <option value="Transfer Bank Mandiri">Transfer Bank Mandiri</option>
+        <option value="Transfer Bank BNI">Transfer Bank BNI</option>
+        <option value="Transfer Bank BRI">Transfer Bank BRI</option>
+        <option value="OVO">OVO</option>
+        <option value="GoPay">GoPay</option>
+        <option value="Dana">Dana</option>
+        <option value="Lainnya">Lainnya</option>
+      </select>
+    </div>
+
+    <div class="mb-4">
+      <label for="bukti_pembayaran" class="form-label text-secondary fw-medium">Bukti Pembayaran (Gambar)</label>
+      <input type="file" name="bukti_pembayaran" id="bukti_pembayaran" class="form-control" accept="image/*" required>
+    </div>
+
+    <div class="d-grid mt-4">
+      <button type="submit" class="btn btn-primary py-2 fw-semibold shadow-sm">Kirim Konfirmasi</button>
+    </div>
+    <div class="text-center mt-3">
+        <a href="{{ url_for('user_registrations') }}" class="text-decoration-none text-secondary small">Kembali ke Pendaftaran</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

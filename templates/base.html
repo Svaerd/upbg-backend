@@ -81,36 +81,52 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-          <div class="navbar-nav ms-auto">
+          <ul class="navbar-nav ms-auto align-items-center">
             {% if current_user %}
-            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a class="nav-link" href="{{ url_for('user_schedules') }}">Jadwal Test</a>
-            <a class="nav-link" href="{{ url_for('user_registrations') }}">Daftar Tes</a>
-            <a class="nav-link" href="{{ url_for('profile') }}">Profil</a>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_schedules') }}">Jadwal Test</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('user_registrations') }}">Riwayat Pendaftaran</a></li>
+            
             {% if current_user.tipe_user == 'admin' %}
-            <a class="nav-link" href="{{ url_for('manage_test_types') }}">Tipe Tes</a>
-            <a class="nav-link" href="{{ url_for('manage_schedules') }}">Jadwal</a>
-            <a class="nav-link" href="{{ url_for('admin_all_users') }}">Data Pengguna</a>
-            <a class="nav-link" href="{{ url_for('manage_employees') }}">Pegawai</a>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Admin Menu
+              </a>
+              <ul class="dropdown-menu shadow-sm border-0">
+                <li><h6 class="dropdown-header">Manajemen Tes</h6></li>
+                <li><a class="dropdown-item" href="{{ url_for('manage_test_types') }}">Data Tipe Tes</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('manage_schedules') }}">Data Jadwal Tes</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Pembayaran</h6></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin_payments') }}">Verifikasi Pembayaran</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Sistem</h6></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin_all_users') }}">Data Pengguna</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('manage_employees') }}">Data Pegawai</a></li>
+              </ul>
+            </li>
             {% endif %}
-            <form
-              class="d-inline"
-              action="{{ url_for('logout') }}"
-              method="post"
-            >
-              <button
-                class="btn btn-sm btn-outline-light ms-lg-2"
-                type="submit"
-              >
-                Logout
-              </button>
-            </form>
+            
+            <li class="nav-item dropdown ms-lg-2">
+              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Akun Saya
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profil</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <form action="{{ url_for('logout') }}" method="post" class="px-3 pb-2 pt-1">
+                    <button class="btn btn-sm btn-danger w-100" type="submit">Logout</button>
+                  </form>
+                </li>
+              </ul>
+            </li>
             {% else %}
-            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
             {% endif %}
-          </div>
+          </ul>
         </div>
       </div>
     </nav>

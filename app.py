@@ -14,7 +14,9 @@ from flask import (
     url_for,
 )
 from pymysql.cursors import DictCursor
+import uuid
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 
 from pymongo import MongoClient
 
@@ -35,6 +37,12 @@ app.config["MYSQL_HOST"] = os.environ.get("MYSQL_HOST", "localhost")
 app.config["MYSQL_USER"] = os.environ.get("MYSQL_USER", "root")
 app.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD", "secure_root_password")
 app.config["MYSQL_DB"] = os.environ.get("MYSQL_DB", "fp_sbd")
+
+
+app.config["UPLOAD_FOLDER"] = os.path.join(
+    app.root_path, "static", "uploads", "payments"
+)
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
 def get_db():
@@ -526,6 +534,7 @@ def user_register_submit(schedule_id):
         return redirect(url_for("user_registrations"))
 
     metode = request.form.get("metode", "").strip()
+    harga = request.form.get("harga", 0)
     if not metode:
         flash("Pilih metode pembayaran.", "danger")
         return redirect(url_for("user_register_form", schedule_id=schedule_id))
@@ -539,7 +548,7 @@ def user_register_submit(schedule_id):
 
     execute_query(
         "INSERT INTO payments (registration_id, jumlah, metode, status) VALUES (%s, %s, %s, 'PENDING')",
-        (registration_id, schedule.get("harga", 0), metode),
+        (registration_id, harga, metode),
         commit=True,
     )
 
@@ -572,6 +581,73 @@ def user_registrations():
         (g.user["user_id"],),
     )
     return render_template("user/registrations.html", registrations=registrations)
+
+
+@app.route("/user/payments/<int:payment_id>/confirm", methods=["GET", "POST"])
+@login_required
+def user_confirm_payment(payment_id):
+    payment = fetch_one(query.GET_PAYMENT_BY_ID, (payment_id,))
+    if not payment:
+        flash("Pembayaran tidak ditemukan.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    # Validate that this payment belongs to the current user
+    registration = fetch_one(
+        "SELECT user_id FROM registrations WHERE registration_id = %s",
+        (payment["registration_id"],),
+    )
+    if not registration or registration["user_id"] != g.user["user_id"]:
+        flash("Akses ditolak.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    if payment["status"] != "PENDING":
+        flash("Pembayaran ini tidak dalam status pending.", "warning")
+        return redirect(url_for("user_registrations"))
+
+    if request.method == "POST":
+        metode = request.form.get("metode", "").strip()
+        if "bukti_pembayaran" not in request.files:
+            flash("Harap unggah bukti pembayaran.", "danger")
+            return redirect(request.url)
+
+        file = request.files["bukti_pembayaran"]
+        if file.filename == "":
+            flash("Tidak ada file bukti pembayaran yang dipilih.", "danger")
+            return redirect(request.url)
+
+        if not metode:
+            flash("Metode pembayaran wajib dipilih.", "danger")
+            return redirect(request.url)
+
+        if file:
+            filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4().hex}_{filename}"
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
+            file.save(filepath)
+
+            execute_query(query.UPDATE_PAYMENT_PROOF, (metode, payment_id), commit=True)
+            flash(
+                "Konfirmasi pembayaran berhasil dikirim. Menunggu verifikasi Admin.",
+                "success",
+            )
+            return redirect(url_for("user_registrations"))
+
+    return render_template("user/konfirmasi_pembayaran.html", payment=payment)
+
+
+@app.route("/admin/payments")
+@admin_required
+def admin_payments():
+    pending_payments = fetch_all(query.GET_PENDING_PAYMENTS)
+    return render_template("admin/payments.html", payments=pending_payments)
+
+
+@app.route("/admin/payments/<int:payment_id>/approve", methods=["POST"])
+@admin_required
+def admin_approve_payment(payment_id):
+    execute_query(query.APPROVE_PAYMENT, (payment_id,), commit=True)
+    flash("Pembayaran berhasil disetujui.", "success")
+    return redirect(url_for("admin_payments"))
 
 
 if __name__ == "__main__":

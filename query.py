@@ -43,3 +43,37 @@ WHERE r.user_id = %s
 ORDER BY s.tanggal DESC, s.jam_mulai DESC
 LIMIT 5
 """
+
+# GET PAYMENT BY ID
+GET_PAYMENT_BY_ID = \
+"""
+SELECT * FROM payments WHERE payment_id = %s
+"""
+
+# UPDATE PAYMENT PROOF AND METHOD, set status to 'MENUNGGU VERIFIKASI'
+UPDATE_PAYMENT_PROOF = \
+"""
+UPDATE payments 
+SET metode = %s, status = 'MENUNGGU VERIFIKASI', tanggal_bayar = CURRENT_TIMESTAMP
+WHERE payment_id = %s
+"""
+
+# GET ALL PENDING PAYMENTS FOR ADMIN
+GET_PENDING_PAYMENTS = \
+"""
+SELECT p.payment_id, p.jumlah, p.metode, p.status as payment_status, p.tanggal_bayar,
+       r.registration_id, u.nama, t.nama_tes
+FROM payments p
+JOIN registrations r ON p.registration_id = r.registration_id
+JOIN users u ON r.user_id = u.user_id
+JOIN schedules s ON r.schedule_id = s.schedule_id
+JOIN test_types t ON s.test_type_id = t.test_type_id
+WHERE p.status = 'MENUNGGU VERIFIKASI'
+ORDER BY p.tanggal_bayar ASC
+"""
+
+# ADMIN APPROVE PAYMENT
+APPROVE_PAYMENT = \
+"""
+UPDATE payments SET status = 'LUNAS' WHERE payment_id = %s
+"""

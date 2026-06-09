@@ -37,7 +37,12 @@
             <span class="badge {% if r.payment_status == 'LUNAS' %}text-bg-success{% elif r.payment_status == 'PENDING' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">
               {{ r.payment_status }}
             </span>
-            <div class="small text-secondary">{{ r.metode or '' }}</div>
+            <div class="small text-secondary mt-1">{{ r.metode or '' }}</div>
+            {% if r.payment_status == 'PENDING' %}
+            <div class="mt-2">
+              <a href="{{ url_for('user_confirm_payment', payment_id=r.payment_id) }}" class="btn btn-sm btn-outline-primary">Konfirmasi</a>
+            </div>
+            {% endif %}
             {% else %}
             <span class="text-secondary">-</span>
             {% endif %}

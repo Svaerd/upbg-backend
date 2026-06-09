@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS payments (
     registration_id INT UNIQUE NOT NULL,
     jumlah DECIMAL(10, 2),
     metode VARCHAR(50),
+    bukti_pembayaran VARCHAR(255),
     tanggal_bayar DATETIME,
     status VARCHAR(50),
     FOREIGN KEY (registration_id) REFERENCES registrations(registration_id) ON DELETE CASCADE
