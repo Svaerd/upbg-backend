@@ -366,6 +366,104 @@ def delete_schedule(id):
     return redirect(url_for('manage_schedules'))
 
 
+@app.route('/admin/employees', methods=['GET', 'POST'])
+@admin_required
+def manage_employees():
+    if request.method == 'POST':
+        nama = request.form.get('nama', '').strip()
+        email = request.form.get('email', '').strip()
+        no_hp = request.form.get('no_hp', '').strip()
+        jabatan = request.form.get('jabatan', '').strip()
+
+        if not nama or not email:
+            flash('Nama dan email wajib diisi.', 'danger')
+        else:
+            execute_query(
+                """
+                INSERT INTO employees (nama, email, no_hp, jabatan)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (nama, email, no_hp, jabatan),
+                commit=True,
+            )
+            flash('Pegawai berhasil ditambahkan!', 'success')
+            return redirect(url_for('manage_employees'))
+
+    employees = fetch_all("SELECT * FROM employees ORDER BY employee_id DESC")
+    return render_template('admin/employees.html', employees=employees)
+
+
+@app.route('/admin/employees/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_employee(id):
+    execute_query("DELETE FROM employees WHERE employee_id = %s", (id,), commit=True)
+    flash('Pegawai berhasil dihapus.', 'info')
+    return redirect(url_for('manage_employees'))
+
+
+@app.route('/admin/schedules/<int:schedule_id>/supervisors', methods=['GET', 'POST'])
+@admin_required
+def manage_schedule_supervisors(schedule_id):
+    schedule = fetch_one(
+        """
+        SELECT s.schedule_id, s.tanggal, s.jam_mulai, s.jam_selesai, t.nama_tes
+        FROM schedules s
+        JOIN test_types t ON s.test_type_id = t.test_type_id
+        WHERE s.schedule_id = %s
+        """,
+        (schedule_id,)
+    )
+    
+    if not schedule:
+        flash('Jadwal tidak ditemukan.', 'danger')
+        return redirect(url_for('manage_schedules'))
+
+    if request.method == 'POST':
+        employee_id = request.form.get('employee_id')
+        peran = request.form.get('peran', '').strip()
+
+        if not employee_id or not peran:
+            flash('Pegawai dan peran wajib diisi.', 'danger')
+        else:
+            execute_query(
+                """
+                INSERT INTO schedule_supervisors (schedule_id, employee_id, peran)
+                VALUES (%s, %s, %s)
+                """,
+                (schedule_id, employee_id, peran),
+                commit=True,
+            )
+            flash('Pengawas berhasil ditugaskan!', 'success')
+            return redirect(url_for('manage_schedule_supervisors', schedule_id=schedule_id))
+
+    supervisors = fetch_all(
+        """
+        SELECT ss.id, ss.peran, e.nama, e.email, e.jabatan
+        FROM schedule_supervisors ss
+        JOIN employees e ON ss.employee_id = e.employee_id
+        WHERE ss.schedule_id = %s
+        """,
+        (schedule_id,)
+    )
+    
+    employees_dropdown = fetch_all("SELECT employee_id, nama, jabatan FROM employees")
+    
+    return render_template(
+        'admin/schedule_supervisors.html',
+        schedule=schedule,
+        supervisors=supervisors,
+        employees=employees_dropdown
+    )
+
+@app.route('/admin/supervisors/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_schedule_supervisor(id):
+    schedule_id = request.form.get('schedule_id')
+    execute_query("DELETE FROM schedule_supervisors WHERE id = %s", (id,), commit=True)
+    flash('Pengawas berhasil dihapus dari jadwal.', 'info')
+    return redirect(url_for('manage_schedule_supervisors', schedule_id=schedule_id))
+
+
 if __name__ == '__main__':
     print("  _    _ _____  ____   _____   _______ ____  ______ ______ _      ")
     print(" | |  | |  __ \|  _ \ / ____| |__   __/ __ \|  ____|  ____| |     ")

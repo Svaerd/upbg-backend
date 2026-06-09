@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+  <a href="{{ url_for('manage_schedules') }}" class="btn btn-outline-secondary">&larr; Kembali ke Jadwal</a>
+  <h4 class="mb-0 text-dark fw-bold">Pengawas: {{ schedule.nama_tes }}</h4>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="auth-panel rounded-4 p-4">
+      <div class="mb-4">
+        <h5 class="fw-bold">Info Jadwal</h5>
+        <ul class="list-unstyled text-secondary">
+          <li><strong>Tanggal:</strong> {{ schedule.tanggal }}</li>
+          <li><strong>Waktu:</strong> {{ schedule.jam_mulai }} - {{ schedule.jam_selesai }}</li>
+        </ul>
+      </div>
+      <hr />
+      <h2 class="h5 fw-bold mb-3">Tugaskan Pengawas</h2>
+      <form method="post">
+        <div class="form-floating mb-3">
+          <select class="form-select" id="employee_id" name="employee_id" required>
+            <option value="">Pilih pegawai</option>
+            {% for e in employees %}
+            <option value="{{ e.employee_id }}">{{ e.nama }} ({{ e.jabatan }})</option>
+            {% endfor %}
+          </select>
+          <label for="employee_id">Pegawai</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input class="form-control" id="peran" type="text" name="peran" placeholder="Peran (misal: Pengawas Utama)" required />
+          <label for="peran">Peran</label>
+        </div>
+        <button class="btn btn-dark btn-lg w-100" type="submit">Tambahkan</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="hero-panel rounded-4 p-4">
+      <h2 class="h5 fw-bold mb-3">Daftar Pengawas Bertugas</h2>
+      {% if supervisors %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Pegawai</th>
+              <th>Jabatan</th>
+              <th>Peran</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in supervisors %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ s.nama }}</div>
+                <small class="text-secondary">{{ s.email }}</small>
+              </td>
+              <td>{{ s.jabatan or '-' }}</td>
+              <td><span class="badge accent-pill">{{ s.peran }}</span></td>
+              <td>
+                <form action="{{ url_for('delete_schedule_supervisor', id=s.id) }}" method="post" onsubmit="return confirm('Hapus pengawas ini dari jadwal?')">
+                  <input type="hidden" name="schedule_id" value="{{ schedule.schedule_id }}" />
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-secondary mb-0">Belum ada pengawas yang ditugaskan untuk jadwal ini.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
