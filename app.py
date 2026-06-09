@@ -111,54 +111,6 @@ def close_db(error):
     if db is not None:
         db.close()
 
-def init_db():
-    """Reads schema.sql and initializes the database tables."""
-    print("Checking database tables...")
-    # Open a direct connection outside of the request context
-    connection = pymysql.connect(
-        host=app.config['MYSQL_HOST'],
-        user=app.config['MYSQL_USER'],
-        password=app.config['MYSQL_PASSWORD'],
-        database=app.config['MYSQL_DB']
-    )
-    
-    try:
-        with connection.cursor(DictCursor) as cursor:
-            # Read the raw SQL file
-            with open('schema.sql', 'r') as f:
-                sql_script = f.read()
-            
-            # Split the script into individual queries by semicolon
-            sql_commands = sql_script.split(';')
-            
-            for command in sql_commands:
-                # Execute only if the command is not an empty string
-                if command.strip():
-                    cursor.execute(command)
-
-            cursor.execute(
-                """
-                SELECT COUNT(*) AS column_count
-                FROM information_schema.columns
-                WHERE table_schema = %s
-                  AND table_name = 'users'
-                  AND column_name = 'password_hash'
-                """,
-                (app.config['MYSQL_DB'],),
-            )
-            column_count = cursor.fetchone()['column_count']
-            if column_count == 0:
-                cursor.execute(
-                    "ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT '' AFTER email"
-                )
-                    
-        connection.commit()
-        print("Database initialized successfully.")
-    except Exception as e:
-        print(f"Error initializing database: {e}")
-    finally:
-        connection.close()
-
 @app.route('/')
 def home():
     if g.user is not None:
