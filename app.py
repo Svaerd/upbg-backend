@@ -510,11 +510,5 @@ if __name__ == '__main__':
     print("                                                                  ")
     print("                                                                  ")
 
-    # Initialize the database right before starting the server
-    print("=" * 15)
-    print("Initializing database...")
-    print("=" * 15)
-    init_db()
-
     print("Starting Flask server...")
     app.run(debug=True)
