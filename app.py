@@ -23,6 +23,7 @@ from werkzeug.utils import secure_filename
 from pymongo import MongoClient
 
 import query
+import nosql_query
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
@@ -271,11 +272,7 @@ def profile():
             flash("Nama wajib diisi.", "danger")
         else:
             execute_query(
-                """
-                UPDATE users 
-                SET nama = %s, no_hp = %s, nrp = %s, instansi = %s 
-                WHERE user_id = %s
-                """,
+                query.UPDATE_USER_PROFILE,
                 (nama, no_hp, nrp, instansi, g.user["user_id"]),
                 commit=True,
             )
@@ -288,7 +285,7 @@ def profile():
 @app.route("/admin/all-user")
 @admin_required
 def admin_all_users():
-    users = fetch_all("SELECT * FROM users ORDER BY created_at DESC")
+    users = fetch_all(query.GET_ALL_USERS)
     return render_template("admin/all_users.html", users=users)
 
 
@@ -305,24 +302,21 @@ def manage_test_types():
             flash("Nama tes wajib diisi.", "danger")
         else:
             execute_query(
-                """
-                INSERT INTO test_types (nama_tes, deskripsi, harga, masa_berlaku_sertifikat)
-                VALUES (%s, %s, %s, %s)
-                """,
+                query.INSERT_TEST_TYPE,
                 (nama_tes, deskripsi, harga, masa_berlaku),
                 commit=True,
             )
             flash("Tipe tes berhasil ditambahkan!", "success")
             return redirect(url_for("manage_test_types"))
 
-    test_types = fetch_all("SELECT * FROM test_types ORDER BY test_type_id DESC")
+    test_types = fetch_all(query.GET_ALL_TEST_TYPES)
     return render_template("admin/test_types.html", test_types=test_types)
 
 
 @app.route("/admin/test-types/delete/<int:id>", methods=["POST"])
 @admin_required
 def delete_test_type(id):
-    execute_query("DELETE FROM test_types WHERE test_type_id = %s", (id,), commit=True)
+    execute_query(query.DELETE_TEST_TYPE, (id,), commit=True)
     flash("Tipe tes berhasil dihapus.", "info")
     return redirect(url_for("manage_test_types"))
 
@@ -340,23 +334,15 @@ def manage_schedules():
         status = request.form.get("status", "TERSEDIA")
 
         execute_query(
-            """
-            INSERT INTO schedules (test_type_id, tanggal, jam_mulai, jam_selesai, lokasi, kuota, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
+            query.INSERT_SCHEDULE,
             (test_type_id, tanggal, jam_mulai, jam_selesai, lokasi, kuota, status),
             commit=True,
         )
         flash("Jadwal ujian berhasil ditambahkan!", "success")
         return redirect(url_for("manage_schedules"))
 
-    schedules = fetch_all("""
-        SELECT s.schedule_id, s.tanggal, s.jam_mulai, s.jam_selesai, s.lokasi, s.kuota, s.status, t.nama_tes
-        FROM schedules s
-        JOIN test_types t ON s.test_type_id = t.test_type_id
-        ORDER BY s.tanggal DESC, s.jam_mulai DESC
-        """)
-    test_types_dropdown = fetch_all("SELECT test_type_id, nama_tes FROM test_types")
+    schedules = fetch_all(query.GET_ALL_SCHEDULES)
+    test_types_dropdown = fetch_all(query.GET_TEST_TYPES_DROPDOWN)
     return render_template(
         "admin/schedules.html",
         schedules=schedules,
@@ -367,7 +353,7 @@ def manage_schedules():
 @app.route("/admin/schedules/delete/<int:id>", methods=["POST"])
 @admin_required
 def delete_schedule(id):
-    execute_query("DELETE FROM schedules WHERE schedule_id = %s", (id,), commit=True)
+    execute_query(query.DELETE_SCHEDULE, (id,), commit=True)
     flash("Jadwal tes berhasil dihapus.", "info")
     return redirect(url_for("manage_schedules"))
 
@@ -385,24 +371,21 @@ def manage_employees():
             flash("Nama dan email wajib diisi.", "danger")
         else:
             execute_query(
-                """
-                INSERT INTO employees (nama, email, no_hp, jabatan)
-                VALUES (%s, %s, %s, %s)
-                """,
+                query.INSERT_EMPLOYEE,
                 (nama, email, no_hp, jabatan),
                 commit=True,
             )
             flash("Pegawai berhasil ditambahkan!", "success")
             return redirect(url_for("manage_employees"))
 
-    employees = fetch_all("SELECT * FROM employees ORDER BY employee_id DESC")
+    employees = fetch_all(query.GET_ALL_EMPLOYEES)
     return render_template("admin/employees.html", employees=employees)
 
 
 @app.route("/admin/employees/delete/<int:id>", methods=["POST"])
 @admin_required
 def delete_employee(id):
-    execute_query("DELETE FROM employees WHERE employee_id = %s", (id,), commit=True)
+    execute_query(query.DELETE_EMPLOYEE, (id,), commit=True)
     flash("Pegawai berhasil dihapus.", "info")
     return redirect(url_for("manage_employees"))
 
@@ -411,12 +394,7 @@ def delete_employee(id):
 @admin_required
 def manage_schedule_supervisors(schedule_id):
     schedule = fetch_one(
-        """
-        SELECT s.schedule_id, s.tanggal, s.jam_mulai, s.jam_selesai, t.nama_tes
-        FROM schedules s
-        JOIN test_types t ON s.test_type_id = t.test_type_id
-        WHERE s.schedule_id = %s
-        """,
+        query.GET_SCHEDULE_BY_ID,
         (schedule_id,),
     )
 
@@ -432,10 +410,7 @@ def manage_schedule_supervisors(schedule_id):
             flash("Pegawai dan peran wajib diisi.", "danger")
         else:
             execute_query(
-                """
-                INSERT INTO schedule_supervisors (schedule_id, employee_id, peran)
-                VALUES (%s, %s, %s)
-                """,
+                query.INSERT_SCHEDULE_SUPERVISOR,
                 (schedule_id, employee_id, peran),
                 commit=True,
             )
@@ -445,16 +420,11 @@ def manage_schedule_supervisors(schedule_id):
             )
 
     supervisors = fetch_all(
-        """
-        SELECT ss.id, ss.peran, e.nama, e.email, e.jabatan
-        FROM schedule_supervisors ss
-        JOIN employees e ON ss.employee_id = e.employee_id
-        WHERE ss.schedule_id = %s
-        """,
+        query.GET_SCHEDULE_SUPERVISORS,
         (schedule_id,),
     )
 
-    employees_dropdown = fetch_all("SELECT employee_id, nama, jabatan FROM employees")
+    employees_dropdown = fetch_all(query.GET_EMPLOYEES_DROPDOWN)
 
     return render_template(
         "admin/schedule_supervisors.html",
@@ -468,7 +438,7 @@ def manage_schedule_supervisors(schedule_id):
 @admin_required
 def delete_schedule_supervisor(id):
     schedule_id = request.form.get("schedule_id")
-    execute_query("DELETE FROM schedule_supervisors WHERE id = %s", (id,), commit=True)
+    execute_query(query.DELETE_SCHEDULE_SUPERVISOR, (id,), commit=True)
     flash("Pengawas berhasil dihapus dari jadwal.", "info")
     return redirect(url_for("manage_schedule_supervisors", schedule_id=schedule_id))
 
@@ -476,13 +446,7 @@ def delete_schedule_supervisor(id):
 @app.route("/user/schedules")
 @login_required
 def user_schedules():
-    schedules = fetch_all("""
-        SELECT s.*, t.nama_tes, t.harga
-        FROM schedules s
-        JOIN test_types t ON s.test_type_id = t.test_type_id
-        WHERE s.status = 'TERSEDIA' AND s.kuota > 0
-        ORDER BY s.tanggal ASC, s.jam_mulai ASC
-        """)
+    schedules = fetch_all(query.GET_AVAILABLE_SCHEDULES)
     return render_template("user/schedules.html", schedules=schedules)
 
 
@@ -490,12 +454,7 @@ def user_schedules():
 @login_required
 def user_register_form(schedule_id):
     schedule = fetch_one(
-        """
-        SELECT s.*, t.nama_tes, t.deskripsi, t.harga, t.masa_berlaku_sertifikat
-        FROM schedules s
-        JOIN test_types t ON s.test_type_id = t.test_type_id
-        WHERE s.schedule_id = %s
-        """,
+        query.GET_SCHEDULE_DETAILS,
         (schedule_id,),
     )
     if not schedule:
@@ -506,7 +465,7 @@ def user_register_form(schedule_id):
         return redirect(url_for("user_schedules"))
 
     existing = fetch_one(
-        "SELECT registration_id FROM registrations WHERE user_id = %s AND schedule_id = %s",
+        query.CHECK_EXISTING_REGISTRATION,
         (g.user["user_id"], schedule_id),
     )
     if existing:
@@ -520,7 +479,7 @@ def user_register_form(schedule_id):
 @login_required
 def user_register_submit(schedule_id):
     schedule = fetch_one(
-        "SELECT * FROM schedules WHERE schedule_id = %s",
+        query.GET_SCHEDULE_BY_ID_SIMPLE,
         (schedule_id,),
     )
     if not schedule or schedule["status"] != "TERSEDIA" or schedule["kuota"] <= 0:
@@ -528,7 +487,7 @@ def user_register_submit(schedule_id):
         return redirect(url_for("user_schedules"))
 
     existing = fetch_one(
-        "SELECT registration_id FROM registrations WHERE user_id = %s AND schedule_id = %s",
+        query.CHECK_EXISTING_REGISTRATION,
         (g.user["user_id"], schedule_id),
     )
     if existing:
@@ -542,20 +501,20 @@ def user_register_submit(schedule_id):
         return redirect(url_for("user_register_form", schedule_id=schedule_id))
 
     registration_id = execute_query(
-        "INSERT INTO registrations (user_id, schedule_id, status) VALUES (%s, %s, 'TERDAFTAR')",
+        query.INSERT_REGISTRATION,
         (g.user["user_id"], schedule_id),
         commit=True,
         return_id=True,
     )
 
     execute_query(
-        "INSERT INTO payments (registration_id, jumlah, metode, status) VALUES (%s, %s, %s, 'PENDING')",
+        query.INSERT_PAYMENT,
         (registration_id, harga, metode),
         commit=True,
     )
 
     execute_query(
-        "UPDATE schedules SET kuota = kuota - 1 WHERE schedule_id = %s AND kuota > 0",
+        query.DECREMENT_SCHEDULE_QUOTA,
         (schedule_id,),
         commit=True,
     )
@@ -568,22 +527,11 @@ def user_register_submit(schedule_id):
 @login_required
 def user_registrations():
     registrations = fetch_all(
-        """
-        SELECT r.registration_id, r.tanggal_daftar, r.status AS registration_status,
-               s.tanggal, s.jam_mulai, s.jam_selesai, s.lokasi, s.kuota,
-               t.nama_tes, t.harga,
-               p.metode, p.status AS payment_status, p.payment_id
-        FROM registrations r
-        JOIN schedules s ON r.schedule_id = s.schedule_id
-        JOIN test_types t ON s.test_type_id = t.test_type_id
-        LEFT JOIN payments p ON r.registration_id = p.registration_id
-        WHERE r.user_id = %s
-        ORDER BY r.tanggal_daftar DESC
-        """,
+        query.GET_USER_REGISTRATIONS,
         (g.user["user_id"],),
     )
 
-    sessions = list(mongo_db.EXAM_SESSIONS.find({"user_id": g.user["user_id"]}))
+    sessions = nosql_query.get_user_sessions(mongo_db, g.user["user_id"])
     session_map = {s["registration_id"]: s for s in sessions}
 
     return render_template(
@@ -601,7 +549,7 @@ def user_confirm_payment(payment_id):
 
     # Validate that this payment belongs to the current user
     registration = fetch_one(
-        "SELECT user_id FROM registrations WHERE registration_id = %s",
+        query.GET_REGISTRATION_USER_ID,
         (payment["registration_id"],),
     )
     if not registration or registration["user_id"] != g.user["user_id"]:
@@ -687,7 +635,7 @@ def manage_exam_banks():
             "questions": data.get("questions", []),  # Array of Objects
         }
 
-        mongo_db.EXAM_BANKS.insert_one(exam_bank_doc)
+        nosql_query.insert_exam_bank(mongo_db, exam_bank_doc)
         return {
             "status": "success",
             "message": "Soal berhasil ditambahkan!",
@@ -695,7 +643,7 @@ def manage_exam_banks():
         }, 201
 
     # GET method
-    banks = list(mongo_db.EXAM_BANKS.find())
+    banks = nosql_query.get_all_exam_banks(mongo_db)
     return render_template("admin/exam_banks.html", banks=banks)
 
 
@@ -722,10 +670,10 @@ def manage_exam_templates():
             ),  # Object: {"reading": 10, "listening": 15}
         }
 
-        mongo_db.EXAM_TEMPLATE.insert_one(template_doc)
+        nosql_query.insert_exam_template(mongo_db, template_doc)
         return {"status": "success", "message": "Template berhasil dibuat!"}, 201
 
-    templates = list(mongo_db.EXAM_TEMPLATE.find())
+    templates = nosql_query.get_all_exam_templates(mongo_db)
     return render_template("admin/exam_templates.html", templates=templates)
 
 
@@ -740,13 +688,7 @@ def generate_exam_session(registration_id):
     """
     # 1. Validasi RDBMS: Pastikan registrasi milik user ini dan pembayaran sudah lunas (misal).
     registration = fetch_one(
-        """
-        SELECT r.registration_id, r.user_id, r.schedule_id, t.nama_tes, t.test_type_id
-        FROM registrations r
-        JOIN schedules s ON r.schedule_id = s.schedule_id
-        JOIN test_types t ON s.test_type_id = t.test_type_id
-        WHERE r.registration_id = %s AND r.user_id = %s
-        """,
+        query.GET_REGISTRATION_FOR_EXAM,
         (registration_id, g.user["user_id"]),
     )
 
@@ -755,8 +697,8 @@ def generate_exam_session(registration_id):
         return redirect(url_for("user_registrations"))
 
     # Cek apakah session sudah pernah digenerate
-    existing_session = mongo_db.EXAM_SESSIONS.find_one(
-        {"registration_id": registration_id}
+    existing_session = nosql_query.get_session_by_registration(
+        mongo_db, registration_id
     )
     if existing_session:
         flash("Sesi ujian sudah dibuat.", "info")
@@ -764,7 +706,7 @@ def generate_exam_session(registration_id):
 
     # 2. Ambil Template Ujian berdasarkan tipe tes RDBMS
     test_type_name = registration["nama_tes"]
-    template = mongo_db.EXAM_TEMPLATE.find_one({"test_type": test_type_name})
+    template = nosql_query.get_template_by_test_type(mongo_db, test_type_name)
 
     if not template:
         flash("Template ujian belum dikonfigurasi oleh Admin.", "danger")
@@ -774,12 +716,9 @@ def generate_exam_session(registration_id):
     selected_question_ids = []
     for section, amount in template.get("requirements", {}).items():
         # Aggregation MongoDB untuk mengambil soal secara acak (random $sample)
-        pipeline = [
-            {"$match": {"test_type": test_type_name, "section": section}},
-            {"$sample": {"size": amount}},
-            {"$project": {"_id": 1}},
-        ]
-        random_banks = list(mongo_db.EXAM_BANKS.aggregate(pipeline))
+        random_banks = nosql_query.get_random_questions(
+            mongo_db, test_type_name, section, amount
+        )
         selected_question_ids.extend([str(bank["_id"]) for bank in random_banks])
 
     # 4. Insert ke EXAM_SESSIONS
@@ -795,7 +734,7 @@ def generate_exam_session(registration_id):
         "status": "ONGOING",
     }
 
-    mongo_db.EXAM_SESSIONS.insert_one(session_doc)
+    nosql_query.insert_exam_session(mongo_db, session_doc)
     flash("Sesi ujian berhasil dibuat! Silakan mulai.", "success")
     return redirect(url_for("user_registrations"))
 
@@ -809,8 +748,8 @@ def submit_exam_answers(session_id):
     serta embed rincian jawaban.
     """
     # Validasi kepemilikan session
-    session_data = mongo_db.EXAM_SESSIONS.find_one(
-        {"_id": session_id, "user_id": g.user["user_id"]}
+    session_data = nosql_query.get_session_by_id_and_user(
+        mongo_db, session_id, g.user["user_id"]
     )
 
     if not session_data:
@@ -836,14 +775,7 @@ def submit_exam_answers(session_id):
     }
 
     # Update jika jawaban dari question bank ini sudah pernah disubmit di sesi ini, atau Insert baru
-    mongo_db.EXAM_ANSWERS.update_one(
-        {"session_id": session_id, "question_id": question_id},
-        {
-            "$set": answer_doc,
-            "$setOnInsert": {"_id": f"ANS_{uuid.uuid4().hex[:10].upper()}"},
-        },
-        upsert=True,
-    )
+    nosql_query.upsert_exam_answer(mongo_db, session_id, question_id, answer_doc)
 
     return {"status": "success", "message": "Jawaban berhasil disimpan."}
 
@@ -851,8 +783,8 @@ def submit_exam_answers(session_id):
 @app.route("/user/exam/<session_id>")
 @login_required
 def take_exam(session_id):
-    session_data = mongo_db.EXAM_SESSIONS.find_one(
-        {"_id": session_id, "user_id": g.user["user_id"]}
+    session_data = nosql_query.get_session_by_id_and_user(
+        mongo_db, session_id, g.user["user_id"]
     )
 
     if not session_data:
@@ -864,8 +796,8 @@ def take_exam(session_id):
         return redirect(url_for("user_registrations"))
 
     question_ids = session_data.get("questions", [])
-    banks = list(mongo_db.EXAM_BANKS.find({"_id": {"$in": question_ids}}))
-    saved_answers = list(mongo_db.EXAM_ANSWERS.find({"session_id": session_id}))
+    banks = nosql_query.get_banks_by_ids(mongo_db, question_ids)
+    saved_answers = nosql_query.get_answers_by_session(mongo_db, session_id)
     answers_map = {ans["question_id"]: ans.get("answers", {}) for ans in saved_answers}
 
     return render_template(
@@ -879,16 +811,14 @@ def take_exam(session_id):
 @app.route("/user/exam/<session_id>/finish", methods=["POST"])
 @login_required
 def finish_exam(session_id):
-    session_data = mongo_db.EXAM_SESSIONS.find_one(
-        {"_id": session_id, "user_id": g.user["user_id"]}
+    session_data = nosql_query.get_session_by_id_and_user(
+        mongo_db, session_id, g.user["user_id"]
     )
     if not session_data:
         flash("Sesi ujian tidak valid.", "danger")
         return redirect(url_for("user_registrations"))
 
-    mongo_db.EXAM_SESSIONS.update_one(
-        {"_id": session_id}, {"$set": {"status": "FINISHED"}}
-    )
+    nosql_query.finish_exam_session(mongo_db, session_id)
     flash("Ujian berhasil diselesaikan. Terima kasih!", "success")
     return redirect(url_for("user_registrations"))
 
