@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Mengerjakan Ujian</h2>
+        <form action="{{ url_for('finish_exam', session_id=session_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengakhiri ujian ini? Anda tidak akan bisa mengubah jawaban lagi.')">
+            <button type="submit" class="btn btn-danger">Selesai Ujian</button>
+        </form>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {% for bank in banks %}
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-dark text-white d-flex justify-content-between">
+                    <span><strong>Section:</strong> {{ bank.section }}</span>
+                    <span><strong>Tipe:</strong> {{ bank.test_type }}</span>
+                </div>
+                <div class="card-body">
+                    {% if bank.passage and bank.passage.content %}
+                    <div class="mb-4 p-3 bg-light border rounded">
+                        <h5>{{ bank.passage.title }}</h5>
+                        <p style="white-space: pre-wrap;">{{ bank.passage.content }}</p>
+                    </div>
+                    {% endif %}
+
+                    <form class="exam-bank-form" data-bank-id="{{ bank._id }}">
+                        {% for q in bank.questions %}
+                        <div class="mb-3">
+                            <p class="mb-2"><strong>{{ loop.index }}.</strong> {{ q.text }}</p>
+                            {% set current_answer = answers_map.get(bank._id, {}).get(q.id, '') %}
+                            
+                            {% for opt in q.options %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="q_{{ q.id }}" 
+                                       id="opt_{{ bank._id }}_{{ q.id }}_{{ loop.index }}" 
+                                       value="{{ opt }}"
+                                       {% if current_answer == opt %}checked{% endif %}
+                                       onchange="saveAnswer('{{ bank._id }}')">
+                                <label class="form-check-label" for="opt_{{ bank._id }}_{{ q.id }}_{{ loop.index }}">
+                                    {{ opt }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </form>
+                    
+                    <div class="text-end mt-3">
+                        <span class="text-success save-status fw-bold" id="status_{{ bank._id }}" style="display: none;">Jawaban tersimpan!</span>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                Tidak ada soal yang tersedia untuk sesi ini.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function saveAnswer(bankId) {
+    const form = document.querySelector(`form[data-bank-id="${bankId}"]`);
+    const formData = new FormData(form);
+    
+    const answers = {};
+    formData.forEach((value, key) => {
+        // Form name is e.g. "q_1", we only need the "1" portion
+        const qId = key.substring(2);
+        answers[qId] = value;
+    });
+
+    const payload = {
+        question_id: bankId,
+        answers: answers
+    };
+    
+    const statusEl = document.getElementById(`status_${bankId}`);
+    statusEl.textContent = "Menyimpan...";
+    statusEl.style.display = "inline";
+    statusEl.className = "text-warning save-status fw-bold";
+
+    fetch("{{ url_for('submit_exam_answers', session_id=session_id) }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            statusEl.textContent = "Jawaban tersimpan!";
+            statusEl.className = "text-success save-status fw-bold";
+            setTimeout(() => {
+                statusEl.style.display = "none";
+            }, 2500);
+        } else {
+            statusEl.textContent = "Gagal menyimpan!";
+            statusEl.className = "text-danger save-status fw-bold";
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusEl.textContent = "Error jaringan!";
+        statusEl.className = "text-danger save-status fw-bold";
+    });
+}
+</script>
+{% endblock %}

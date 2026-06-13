@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Template Ujian (Exam Templates)</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTemplateModal">
+            Tambah Template
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID Template</th>
+                        <th>Tipe Tes</th>
+                        <th>Persyaratan (Requirements)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for template in templates %}
+                    <tr>
+                        <td>{{ template._id }}</td>
+                        <td>{{ template.test_type }}</td>
+                        <td>
+                            <ul>
+                                {% for section, amount in template.requirements.items() %}
+                                <li>{{ section }}: {{ amount }} soal</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center">Belum ada template ujian yang ditambahkan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Template Ujian -->
+<div class="modal fade" id="addTemplateModal" tabindex="-1" aria-labelledby="addTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTemplateModalLabel">Tambah Template Ujian Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTemplateForm">
+                    <div class="mb-3">
+                        <label for="templateTestType" class="form-label">Tipe Tes</label>
+                        <input type="text" class="form-control" id="templateTestType" placeholder="Contoh: TOEFL" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="requirements" class="form-label">Persyaratan (JSON)</label>
+                        <textarea class="form-control" id="requirements" rows="4" required>{
+  "Reading": 10,
+  "Listening": 15
+}</textarea>
+                        <div class="form-text">Isi dengan pasangan key (section) dan value (jumlah soal).</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" onclick="submitExamTemplate()">Simpan Template</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitExamTemplate() {
+    let testType = document.getElementById('templateTestType').value;
+    
+    let requirements;
+    try {
+        requirements = JSON.parse(document.getElementById('requirements').value || "{}");
+    } catch (e) {
+        alert("Format JSON tidak valid pada Persyaratan.");
+        return;
+    }
+
+    let payload = {
+        test_type: testType,
+        requirements: requirements
+    };
+
+    fetch("{{ url_for('manage_exam_templates') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert("Gagal: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Terjadi kesalahan saat menyimpan data.");
+    });
+}
+</script>
+{% endblock %}

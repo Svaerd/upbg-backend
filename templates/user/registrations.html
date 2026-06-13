@@ -18,10 +18,11 @@
           <th>Status Registrasi</th>
           <th>Pembayaran</th>
           <th>Tanggal Daftar</th>
+          <th>Ujian</th>
         </tr>
       </thead>
       <tbody>
-        {% for r in registrations %}
+      {% for r in registrations %}
         <tr>
           <td class="fw-semibold">{{ r.nama_tes }}</td>
           <td>{{ r.tanggal }}</td>
@@ -48,6 +49,22 @@
             {% endif %}
           </td>
           <td class="text-secondary small">{{ r.tanggal_daftar }}</td>
+          <td>
+            {% set exam_session = session_map.get(r.registration_id) %}
+            {% if exam_session %}
+                {% if exam_session.status == 'ONGOING' %}
+                    <a href="{{ url_for('take_exam', session_id=exam_session._id) }}" class="btn btn-sm btn-primary">Lanjutkan Ujian</a>
+                {% else %}
+                  <button class="btn btn-sm btn-secondary" disabled>Ujian Selesai</button>
+                {% endif %}
+            {% elif r.payment_status == 'LUNAS' %}
+                <form action="{{ url_for('generate_exam_session', registration_id=r.registration_id) }}" method="POST" class="m-0">
+                    <button type="submit" class="btn btn-sm btn-success">Mulai Ujian</button>
+                </form>
+            {% else %}
+                <span class="text-secondary small">Menunggu Lunas</span>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

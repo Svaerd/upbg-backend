@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Bank Soal Ujian (Exam Banks)</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankModal">
+            Tambah Soal
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID Bank</th>
+                        <th>Tipe Tes</th>
+                        <th>Bagian (Section)</th>
+                        <th>Kesulitan</th>
+                        <th>Jumlah Soal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bank in banks %}
+                    <tr>
+                        <td>{{ bank._id }}</td>
+                        <td>{{ bank.test_type }}</td>
+                        <td>{{ bank.section }}</td>
+                        <td>{{ bank.difficulty }}</td>
+                        <td>{{ bank.questions | length }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">Belum ada bank soal yang ditambahkan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Bank Soal -->
+<div class="modal fade" id="addBankModal" tabindex="-1" aria-labelledby="addBankModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addBankModalLabel">Tambah Bank Soal Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addBankForm">
+                    <div class="mb-3">
+                        <label for="testType" class="form-label">Tipe Tes</label>
+                        <input type="text" class="form-control" id="testType" placeholder="Contoh: TOEFL" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="section" class="form-label">Bagian (Section)</label>
+                        <input type="text" class="form-control" id="section" placeholder="Contoh: Reading" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="difficulty" class="form-label">Tingkat Kesulitan</label>
+                        <select class="form-select" id="difficulty" required>
+                            <option value="Easy">Mudah</option>
+                            <option value="Medium" selected>Sedang</option>
+                            <option value="Hard">Sulit</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="passage" class="form-label">Teks Bacaan (JSON)</label>
+                        <textarea class="form-control" id="passage" rows="4">{"title": "Judul Bacaan", "content": "Isi bacaan..."}</textarea>
+                        <div class="form-text">Biarkan kosong atau {} jika tidak ada bacaan.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="questions" class="form-label">Daftar Pertanyaan (JSON Array)</label>
+                        <textarea class="form-control" id="questions" rows="6" required>[
+  {
+    "id": "q1",
+    "text": "Pertanyaan 1?",
+    "options": ["A", "B", "C", "D"],
+    "answer": "A"
+  }
+]</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" onclick="submitExamBank()">Simpan Bank Soal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitExamBank() {
+    let testType = document.getElementById('testType').value;
+    let section = document.getElementById('section').value;
+    let difficulty = document.getElementById('difficulty').value;
+    
+    let passage, questions;
+    try {
+        passage = JSON.parse(document.getElementById('passage').value || "{}");
+        questions = JSON.parse(document.getElementById('questions').value || "[]");
+    } catch (e) {
+        alert("Format JSON tidak valid pada Teks Bacaan atau Daftar Pertanyaan.");
+        return;
+    }
+
+    let payload = {
+        test_type: testType,
+        section: section,
+        difficulty: difficulty,
+        passage: passage,
+        questions: questions
+    };
+
+    fetch("{{ url_for('manage_exam_banks') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert("Gagal: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Terjadi kesalahan saat menyimpan data.");
+    });
+}
+</script>
+{% endblock %}

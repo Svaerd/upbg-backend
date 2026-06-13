@@ -1,5 +1,7 @@
 import os
 from functools import wraps
+from datetime import datetime, timezone
+import json
 
 import pymysql
 from flask import (
@@ -580,7 +582,13 @@ def user_registrations():
         """,
         (g.user["user_id"],),
     )
-    return render_template("user/registrations.html", registrations=registrations)
+
+    sessions = list(mongo_db.EXAM_SESSIONS.find({"user_id": g.user["user_id"]}))
+    session_map = {s["registration_id"]: s for s in sessions}
+
+    return render_template(
+        "user/registrations.html", registrations=registrations, session_map=session_map
+    )
 
 
 @app.route("/user/payments/<int:payment_id>/confirm", methods=["GET", "POST"])
@@ -648,6 +656,241 @@ def admin_approve_payment(payment_id):
     execute_query(query.APPROVE_PAYMENT, (payment_id,), commit=True)
     flash("Pembayaran berhasil disetujui.", "success")
     return redirect(url_for("admin_payments"))
+
+
+@app.route("/admin/exam-banks", methods=["GET", "POST"])
+@admin_required
+def manage_exam_banks():
+    """
+    Collection: EXAM_BANKS
+    Mengelola bank soal dengan konsep Embedding untuk passage dan questions.
+    """
+    if request.method == "POST":
+        # Karena struktur questions berupa Array of Objects,
+        # idealnya data dikirim dalam bentuk JSON (contoh via Fetch API/AJAX di frontend).
+        data = request.json if request.is_json else None
+
+        if not data:
+            flash("Data soal tidak valid.", "danger")
+            return redirect(url_for("manage_exam_banks"))
+
+        bank_id = f"BANK_{uuid.uuid4().hex[:10].upper()}"
+
+        exam_bank_doc = {
+            "_id": bank_id,
+            "test_type": data.get("test_type"),  # misal: "TOEFL"
+            "section": data.get("section"),  # misal: "Reading"
+            "difficulty": data.get("difficulty"),
+            "passage": data.get(
+                "passage", {}
+            ),  # Object: { "title": "...", "content": "..." }
+            "questions": data.get("questions", []),  # Array of Objects
+        }
+
+        mongo_db.EXAM_BANKS.insert_one(exam_bank_doc)
+        return {
+            "status": "success",
+            "message": "Soal berhasil ditambahkan!",
+            "bank_id": bank_id,
+        }, 201
+
+    # GET method
+    banks = list(mongo_db.EXAM_BANKS.find())
+    return render_template("admin/exam_banks.html", banks=banks)
+
+
+@app.route("/admin/exam-templates", methods=["GET", "POST"])
+@admin_required
+def manage_exam_templates():
+    """
+    Collection: EXAM_TEMPLATE
+    Mengelola template ujian untuk menentukan jumlah soal per tipe/section.
+    """
+    if request.method == "POST":
+        data = request.json if request.is_json else None
+
+        if not data:
+            return {"status": "error", "message": "Payload JSON dibutuhkan"}, 400
+
+        template_id = f"TPL_{uuid.uuid4().hex[:10].upper()}"
+
+        template_doc = {
+            "_id": template_id,
+            "test_type": data.get("test_type"),
+            "requirements": data.get(
+                "requirements", {}
+            ),  # Object: {"reading": 10, "listening": 15}
+        }
+
+        mongo_db.EXAM_TEMPLATE.insert_one(template_doc)
+        return {"status": "success", "message": "Template berhasil dibuat!"}, 201
+
+    templates = list(mongo_db.EXAM_TEMPLATE.find())
+    return render_template("admin/exam_templates.html", templates=templates)
+
+
+@app.route(
+    "/user/registrations/<int:registration_id>/generate-session", methods=["POST"]
+)
+@login_required
+def generate_exam_session(registration_id):
+    """
+    Collection: EXAM_SESSIONS
+    Membuat sesi ujian baru. Me-referensi RDBMS (registration_id, user_id, schedule_id).
+    """
+    # 1. Validasi RDBMS: Pastikan registrasi milik user ini dan pembayaran sudah lunas (misal).
+    registration = fetch_one(
+        """
+        SELECT r.registration_id, r.user_id, r.schedule_id, t.nama_tes, t.test_type_id
+        FROM registrations r
+        JOIN schedules s ON r.schedule_id = s.schedule_id
+        JOIN test_types t ON s.test_type_id = t.test_type_id
+        WHERE r.registration_id = %s AND r.user_id = %s
+        """,
+        (registration_id, g.user["user_id"]),
+    )
+
+    if not registration:
+        flash("Registrasi tidak ditemukan atau akses ditolak.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    # Cek apakah session sudah pernah digenerate
+    existing_session = mongo_db.EXAM_SESSIONS.find_one(
+        {"registration_id": registration_id}
+    )
+    if existing_session:
+        flash("Sesi ujian sudah dibuat.", "info")
+        return redirect(url_for("user_registrations"))
+
+    # 2. Ambil Template Ujian berdasarkan tipe tes RDBMS
+    test_type_name = registration["nama_tes"]
+    template = mongo_db.EXAM_TEMPLATE.find_one({"test_type": test_type_name})
+
+    if not template:
+        flash("Template ujian belum dikonfigurasi oleh Admin.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    # 3. Generate daftar question IDs (Referencing) berdasarkan requirements di template
+    selected_question_ids = []
+    for section, amount in template.get("requirements", {}).items():
+        # Aggregation MongoDB untuk mengambil soal secara acak (random $sample)
+        pipeline = [
+            {"$match": {"test_type": test_type_name, "section": section}},
+            {"$sample": {"size": amount}},
+            {"$project": {"_id": 1}},
+        ]
+        random_banks = list(mongo_db.EXAM_BANKS.aggregate(pipeline))
+        selected_question_ids.extend([str(bank["_id"]) for bank in random_banks])
+
+    # 4. Insert ke EXAM_SESSIONS
+    session_id = f"SESSION_{uuid.uuid4().hex[:12].upper()}"
+
+    session_doc = {
+        "_id": session_id,
+        "registration_id": registration_id,  # Referensi MySQL
+        "user_id": g.user["user_id"],  # Referensi MySQL
+        "schedule_id": registration["schedule_id"],  # Referensi MySQL
+        "generated_at": datetime.now(timezone.utc),
+        "questions": selected_question_ids,  # Array of Strings (Referencing EXAM_BANKS _id)
+        "status": "ONGOING",
+    }
+
+    mongo_db.EXAM_SESSIONS.insert_one(session_doc)
+    flash("Sesi ujian berhasil dibuat! Silakan mulai.", "success")
+    return redirect(url_for("user_registrations"))
+
+
+@app.route("/user/exam/<session_id>/submit", methods=["POST"])
+@login_required
+def submit_exam_answers(session_id):
+    """
+    Collection: EXAM_ANSWERS
+    Menyimpan jawaban peserta dengan metode referensi ke Session dan Bank,
+    serta embed rincian jawaban.
+    """
+    # Validasi kepemilikan session
+    session_data = mongo_db.EXAM_SESSIONS.find_one(
+        {"_id": session_id, "user_id": g.user["user_id"]}
+    )
+
+    if not session_data:
+        return {
+            "status": "error",
+            "message": "Akses ditolak atau sesi tidak valid.",
+        }, 403
+
+    # Asumsi data yang dikirim dari frontend berupa JSON
+    # Contoh struktur: { "question_id": "BANK_XYZ", "answers": {"1": "A", "2": "C"} }
+    data = request.json if request.is_json else None
+    if not data:
+        return {"status": "error", "message": "Payload jawaban tidak valid."}, 400
+
+    question_id = data.get("question_id")
+    user_answers = data.get("answers", {})
+
+    # Sesuai diagram EXAM_ANSWERS: _id, session_id, question_id, answers (Object Embed)
+    answer_doc = {
+        "session_id": session_id,  # Referencing EXAM_SESSIONS
+        "question_id": question_id,  # Referencing EXAM_BANKS
+        "answers": user_answers,  # Embedded data jawaban
+    }
+
+    # Update jika jawaban dari question bank ini sudah pernah disubmit di sesi ini, atau Insert baru
+    mongo_db.EXAM_ANSWERS.update_one(
+        {"session_id": session_id, "question_id": question_id},
+        {
+            "$set": answer_doc,
+            "$setOnInsert": {"_id": f"ANS_{uuid.uuid4().hex[:10].upper()}"},
+        },
+        upsert=True,
+    )
+
+    return {"status": "success", "message": "Jawaban berhasil disimpan."}
+
+
+@app.route("/user/exam/<session_id>")
+@login_required
+def take_exam(session_id):
+    session_data = mongo_db.EXAM_SESSIONS.find_one(
+        {"_id": session_id, "user_id": g.user["user_id"]}
+    )
+
+    if not session_data:
+        flash("Sesi ujian tidak ditemukan.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    if session_data.get("status") != "ONGOING":
+        flash("Ujian ini sudah selesai.", "warning")
+        return redirect(url_for("user_registrations"))
+
+    question_ids = session_data.get("questions", [])
+    banks = list(mongo_db.EXAM_BANKS.find({"_id": {"$in": question_ids}}))
+    saved_answers = list(mongo_db.EXAM_ANSWERS.find({"session_id": session_id}))
+    answers_map = {ans["question_id"]: ans.get("answers", {}) for ans in saved_answers}
+
+    return render_template(
+        "user/take_exam.html",
+        session_id=session_id,
+        banks=banks,
+        answers_map=answers_map,
+    )
+
+
+@app.route("/user/exam/<session_id>/finish", methods=["POST"])
+@login_required
+def finish_exam(session_id):
+    session_data = mongo_db.EXAM_SESSIONS.find_one(
+        {"_id": session_id, "user_id": g.user["user_id"]}
+    )
+    if not session_data:
+        flash("Sesi ujian tidak valid.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    mongo_db.EXAM_SESSIONS.update_one(
+        {"_id": session_id}, {"$set": {"status": "FINISHED"}}
+    )
+    flash("Ujian berhasil diselesaikan. Terima kasih!", "success")
+    return redirect(url_for("user_registrations"))
 
 
 if __name__ == "__main__":
