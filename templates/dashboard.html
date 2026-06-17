@@ -6,8 +6,10 @@
     >
       <div>
         <span class="badge accent-pill rounded-pill mb-3"
-          >Dashboard pengguna</span
-        >
+          >
+          Dashboard
+          {% if current_user.tipe_user == 'admin' %}Admin{% else %}Pengguna{% endif %}
+          </span>
         <h1 class="h3 fw-bold mb-2">Selamat datang, {{ current_user.nama }}</h1>
         <p class="text-secondary mb-0">
           Akun ini siap dipakai untuk pendaftaran tes, pembayaran, dan hasil

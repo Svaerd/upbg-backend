@@ -606,6 +606,14 @@ def admin_approve_payment(payment_id):
     return redirect(url_for("admin_payments"))
 
 
+@app.route("/admin/exam-banks/delete/<bank_id>", methods=["POST"])
+@admin_required
+def delete_exam_bank(bank_id):
+    nosql_query.delete_exam_bank(mongo_db, bank_id)
+    flash("Bank soal berhasil dihapus.", "info")
+    return redirect(url_for("manage_exam_banks"))
+
+
 @app.route("/admin/exam-banks", methods=["GET", "POST"])
 @admin_required
 def manage_exam_banks():
@@ -645,6 +653,14 @@ def manage_exam_banks():
     # GET method
     banks = nosql_query.get_all_exam_banks(mongo_db)
     return render_template("admin/exam_banks.html", banks=banks)
+
+
+@app.route("/admin/exam-templates/delete/<template_id>", methods=["POST"])
+@admin_required
+def delete_exam_template(template_id):
+    nosql_query.delete_exam_template(mongo_db, template_id)
+    flash("Template ujian berhasil dihapus.", "info")
+    return redirect(url_for("manage_exam_templates"))
 
 
 @app.route("/admin/exam-templates", methods=["GET", "POST"])

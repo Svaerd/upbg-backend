@@ -19,6 +19,7 @@
                         <th>Bagian (Section)</th>
                         <th>Kesulitan</th>
                         <th>Jumlah Soal</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,10 +30,15 @@
                         <td>{{ bank.section }}</td>
                         <td>{{ bank.difficulty }}</td>
                         <td>{{ bank.questions | length }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_exam_bank', bank_id=bank._id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus bank soal ini?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                            </form>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center">Belum ada bank soal yang ditambahkan.</td>
+                        <td colspan="6" class="text-center">Belum ada bank soal yang ditambahkan.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

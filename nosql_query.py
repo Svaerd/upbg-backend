@@ -13,12 +13,20 @@ def get_all_exam_banks(mongo_db):
     return list(mongo_db.EXAM_BANKS.find())
 
 
+def delete_exam_bank(mongo_db, bank_id):
+    mongo_db.EXAM_BANKS.delete_one({"_id": bank_id})
+
+
 def insert_exam_template(mongo_db, template_doc):
     mongo_db.EXAM_TEMPLATE.insert_one(template_doc)
 
 
 def get_all_exam_templates(mongo_db):
     return list(mongo_db.EXAM_TEMPLATE.find())
+
+
+def delete_exam_template(mongo_db, template_id):
+    mongo_db.EXAM_TEMPLATE.delete_one({"_id": template_id})
 
 
 def get_session_by_registration(mongo_db, registration_id):
