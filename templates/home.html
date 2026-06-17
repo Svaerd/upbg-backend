@@ -1,30 +1,93 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    body {
+        background: #050505 !important;
+        color: #f8f9fa !important;
+    }
+    .app-navbar {
+        background: rgba(5, 5, 5, 0.8) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .hero-container {
+        min-height: 75vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    .hero-panel-dark {
+        background: rgba(20, 20, 20, 0.6);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .text-gradient {
+        background: linear-gradient(90deg, #f97316, #facc15);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .btn-accent {
+        background-color: #f97316;
+        color: #fff;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-accent:hover {
+        background-color: #ea580c;
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3);
+    }
+    .btn-outline-light-custom {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    .btn-outline-light-custom:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+</style>
+
 <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
 
-<div class="row align-items-center g-4 g-lg-5">
-  <div class="col-12">
-    <div class="hero-panel rounded-4 p-4 p-lg-5">
-      <span class="badge accent-pill rounded-pill mb-3">UPBG TOEFL Platform</span>
-      <h1 class="display-4 fw-bold lh-1 mb-3" id="typed"></h1>
-      <p class="fs-5 text-secondary mb-4">
-        Kelola pendaftaran, jadwal tes, pembayaran, hasil, dan sertifikat dalam satu alur yang rapi.
-        Permudah dengan tes TOEFL online yang bisa diakses kapan saja, di mana saja.
-      </p>
-      <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-dark btn-lg" href="{{ url_for('register') }}">Buat akun</a>
-        <a class="btn btn-outline-dark btn-lg" href="{{ url_for('login') }}">Masuk</a>
-      </div>
+<div class="hero-container">
+    <div class="hero-panel-dark rounded-4 p-4 p-lg-5 w-100">
+        <span class="badge bg-dark border border-secondary rounded-pill mb-3 px-3 py-2 text-uppercase tracking-wider shadow-sm">UPBG TOEFL Platform</span>
+        <h1 class="display-3 fw-bolder lh-1 mb-4">
+            <span id="typed" class="text-gradient"></span>
+        </h1>
+        <p class="fs-5 text-light opacity-75 mb-5 mx-auto" style="max-width: 650px;">
+            Kelola pendaftaran, jadwal tes, pembayaran, hasil, dan sertifikat dalam satu alur yang rapi.
+            Permudah dengan tes TOEFL online yang bisa diakses kapan saja, di mana saja.
+        </p>
+        <div class="d-flex flex-wrap gap-3 justify-content-center">
+            <a class="btn btn-accent btn-lg px-5 py-3 rounded-pill shadow-lg" href="{{ url_for('register') }}">Buat akun sekarang</a>
+            <a class="btn btn-outline-light-custom btn-lg px-5 py-3 rounded-pill" href="{{ url_for('login') }}">Masuk</a>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     var typed = new Typed("#typed", {
-      strings: ["Mulai tes TOEFL-mu sekarang!"],
+      strings: [
+          "Tes TOEFL?",
+          "Sekarang aja tesnya!",
+          "Raih skor TOEFL impianmu!",
+      ],
       typeSpeed: 50,
-      showCursor: false,
+      backSpeed: 30,
+      backDelay: 2000,
+      loop: true,
+      showCursor: true,
+      cursorChar: '|',
     });
   });
 </script>
