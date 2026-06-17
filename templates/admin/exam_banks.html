@@ -74,20 +74,17 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="passage" class="form-label">Teks Bacaan (JSON)</label>
-                        <textarea class="form-control" id="passage" rows="4">{"title": "Judul Bacaan", "content": "Isi bacaan..."}</textarea>
-                        <div class="form-text">Biarkan kosong atau {} jika tidak ada bacaan.</div>
+                        <label for="passageTitle" class="form-label">Judul Bacaan</label>
+                        <input type="text" class="form-control" id="passageTitle" placeholder="Kosongkan jika tidak ada bacaan">
                     </div>
                     <div class="mb-3">
-                        <label for="questions" class="form-label">Daftar Pertanyaan (JSON Array)</label>
-                        <textarea class="form-control" id="questions" rows="6" required>[
-  {
-    "id": "q1",
-    "text": "Pertanyaan 1?",
-    "options": ["A", "B", "C", "D"],
-    "answer": "A"
-  }
-]</textarea>
+                        <label for="passageContent" class="form-label">Isi Teks Bacaan</label>
+                        <textarea class="form-control" id="passageContent" rows="4" placeholder="Kosongkan jika tidak ada bacaan"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Daftar Pertanyaan</label>
+                        <div id="questionsContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addQuestionBlock()">+ Tambah Pertanyaan</button>
                     </div>
                 </form>
             </div>
@@ -100,17 +97,100 @@
 </div>
 
 <script>
+let questionCounter = 0;
+
+function addQuestionBlock() {
+    questionCounter++;
+    const container = document.getElementById('questionsContainer');
+    const qId = `q${questionCounter}`;
+    
+    const html = `
+        <div class="card mb-3 question-block" id="block-${qId}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6>Pertanyaan</h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestionBlock('block-${qId}')">Hapus</button>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Teks Pertanyaan</label>
+                    <textarea class="form-control q-text" rows="2" required></textarea>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6 mb-2"><label class="form-label">Opsi A</label><input type="text" class="form-control q-opt-a" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label">Opsi B</label><input type="text" class="form-control q-opt-b" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label">Opsi C</label><input type="text" class="form-control q-opt-c" required></div>
+                    <div class="col-md-6 mb-2"><label class="form-label">Opsi D</label><input type="text" class="form-control q-opt-d" required></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Jawaban Benar</label>
+                    <select class="form-select q-answer" required>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+function removeQuestionBlock(blockId) {
+    document.getElementById(blockId).remove();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    addQuestionBlock(); // Tambahkan 1 pertanyaan kosong secara default
+});
+
 function submitExamBank() {
     let testType = document.getElementById('testType').value;
     let section = document.getElementById('section').value;
     let difficulty = document.getElementById('difficulty').value;
     
-    let passage, questions;
-    try {
-        passage = JSON.parse(document.getElementById('passage').value || "{}");
-        questions = JSON.parse(document.getElementById('questions').value || "[]");
-    } catch (e) {
-        alert("Format JSON tidak valid pada Teks Bacaan atau Daftar Pertanyaan.");
+    let passageTitle = document.getElementById('passageTitle').value.trim();
+    let passageContent = document.getElementById('passageContent').value.trim();
+    
+    let passage = {};
+    if (passageTitle || passageContent) {
+        passage = {
+            title: passageTitle,
+            content: passageContent
+        };
+    }
+
+    let questions = [];
+    const questionBlocks = document.querySelectorAll('.question-block');
+    
+    if (questionBlocks.length === 0) {
+        alert("Minimal harus ada satu pertanyaan.");
+        return;
+    }
+
+    let isValid = true;
+    questionBlocks.forEach((block, index) => {
+        const text = block.querySelector('.q-text').value.trim();
+        const optA = block.querySelector('.q-opt-a').value.trim();
+        const optB = block.querySelector('.q-opt-b').value.trim();
+        const optC = block.querySelector('.q-opt-c').value.trim();
+        const optD = block.querySelector('.q-opt-d').value.trim();
+        const answer = block.querySelector('.q-answer').value;
+
+        if (!text || !optA || !optB || !optC || !optD) {
+            isValid = false;
+        }
+
+        questions.push({
+            id: `q${index + 1}`,
+            text: text,
+            options: [optA, optB, optC, optD],
+            answer: answer
+        });
+    });
+
+    if (!isValid) {
+        alert("Semua field pertanyaan dan opsi harus diisi.");
         return;
     }
 
