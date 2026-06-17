@@ -64,12 +64,12 @@
                         <input type="text" class="form-control" id="templateTestType" placeholder="Contoh: TOEFL" required>
                     </div>
                     <div class="mb-3">
-                        <label for="requirements" class="form-label">Persyaratan (JSON)</label>
-                        <textarea class="form-control" id="requirements" rows="4" required>{
-  "Reading": 10,
-  "Listening": 15
-}</textarea>
-                        <div class="form-text">Isi dengan pasangan key (section) dan value (jumlah soal).</div>
+                        <label for="readingCount" class="form-label">Jumlah Soal Reading</label>
+                        <input type="number" class="form-control" id="readingCount" placeholder="Contoh: 10" required min="1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="listeningCount" class="form-label">Jumlah Soal Listening</label>
+                        <input type="number" class="form-control" id="listeningCount" placeholder="Contoh: 15" required min="1" value="1">
                     </div>
                 </form>
             </div>
@@ -84,13 +84,15 @@
 <script>
 function submitExamTemplate() {
     let testType = document.getElementById('templateTestType').value;
+    let readingCount = parseInt(document.getElementById('readingCount').value) || 0;
+    let listeningCount = parseInt(document.getElementById('listeningCount').value) || 0;
     
-    let requirements;
-    try {
-        requirements = JSON.parse(document.getElementById('requirements').value || "{}");
-    } catch (e) {
-        alert("Format JSON tidak valid pada Persyaratan.");
-        return;
+    let requirements = {};
+    if (readingCount > 0) {
+        requirements["Reading"] = readingCount;
+    }
+    if (listeningCount > 0) {
+        requirements["Listening"] = listeningCount;
     }
 
     let payload = {
