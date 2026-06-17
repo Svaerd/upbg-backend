@@ -31,7 +31,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 app.config["MONGO_URI"] = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
 app.config["MONGO_DB"] = os.environ.get("MONGO_DB", "fp_sbd")
 
-# # Initialize MongoDB Client globally
+# Initialize MongoDB Client globally
 mongo_client = MongoClient(app.config["MONGO_URI"])
 mongo_db = mongo_client[app.config["MONGO_DB"]]
 
