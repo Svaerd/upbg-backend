@@ -939,8 +939,77 @@ def finish_exam(session_id):
         flash("Sesi ujian tidak valid.", "danger")
         return redirect(url_for("user_registrations"))
 
+    if session_data.get("status") != "ONGOING":
+        flash("Ujian ini sudah selesai.", "warning")
+        return redirect(url_for("user_registrations"))
+
+    # --- GRADING LOGIC ---
+    # 1. Get all questions
+    question_ids = session_data.get("questions", [])
+    banks = nosql_query.get_banks_by_ids(mongo_db, question_ids)
+    bank_map = {str(b["_id"]): b for b in banks}
+
+    # 2. Get user's submitted answers
+    user_answers_docs = nosql_query.get_answers_by_session(mongo_db, session_id)
+
+    # 3. Calculate scores
+    listening_score = 0
+    reading_score = 0
+    writing_score = 0
+
+    for ans_doc in user_answers_docs:
+        bank_id = ans_doc["question_id"]
+        bank = bank_map.get(bank_id)
+        if not bank:
+            continue
+
+        section = bank.get("section")
+        user_q_answers = ans_doc.get("answers", {})
+
+        if section == "Writing":
+            # Dummy grade: if user wrote anything, give a fixed score for the section.
+            if any(ans.strip() for ans in user_q_answers.values()):
+                writing_score = 20  # Dummy "Good" grade
+        elif section in ["Reading", "Listening"]:
+            for q_in_bank in bank.get("questions", []):
+                q_id = q_in_bank["id"]
+                correct_answer = q_in_bank.get("answer")
+                user_answer = user_q_answers.get(q_id)
+
+                if (
+                    user_answer
+                    and correct_answer
+                    and user_answer.strip().lower() == correct_answer.strip().lower()
+                ):
+                    if section == "Reading":
+                        reading_score += 1
+                    elif section == "Listening":
+                        listening_score += 1
+
+    total_score = listening_score + reading_score + writing_score
+
+    # 4. Store results in MySQL
+    registration_id = session_data.get("registration_id")
+    if registration_id:
+        existing_result = fetch_one(
+            query.GET_TEST_RESULT_BY_REGISTRATION, (registration_id,)
+        )
+        if not existing_result:
+            execute_query(
+                query.INSERT_TEST_RESULT,
+                (
+                    registration_id,
+                    total_score,
+                    listening_score,
+                    reading_score,
+                    writing_score,
+                ),
+                commit=True,
+            )
+
+    # 5. Finish exam session
     nosql_query.finish_exam_session(mongo_db, session_id)
-    flash("Ujian berhasil diselesaikan. Terima kasih!", "success")
+    flash("Ujian berhasil diselesaikan. Nilai Anda telah disimpan!", "success")
     return redirect(url_for("user_registrations"))
 
 
@@ -975,11 +1044,18 @@ def generate_certificate(registration_id):
             commit=True,
         )
 
-    """
-    Generate sertifikat PDF dengan nama peserta yang sudah terdaftar di MySQL.
-    Template PDF sudah disiapkan dengan placeholder untuk nama peserta.
-    """
+    # Fetch scores for the certificate
+    GET_SCORES_QUERY = "SELECT total_score, listening_score, reading_score, structure_score FROM test_results WHERE registration_id = %s"
+    scores = fetch_one(GET_SCORES_QUERY, (registration_id,))
+    if not scores:
+        scores = {
+            "listening_score": 0,
+            "reading_score": 0,
+            "structure_score": 0,
+            "total_score": 0,
+        }
 
+    # Generate PDF from template
     template_path = os.path.join(app.root_path, "certificate.pdf")
     if not os.path.exists(template_path):
         flash("Template sertifikat tidak ditemukan.", "danger")
@@ -991,10 +1067,10 @@ def generate_certificate(registration_id):
     doc = pymupdf.open(stream=io.BytesIO(pdf_data))
     page = doc[0]
 
+    # Add user name
     text_content = registration["nama"]
-    font_size = 25
+    font_size = 23
     y_position = 250
-
     page_width = page.rect.width
     text_width = pymupdf.get_text_length(
         text_content, fontname="helv", fontsize=font_size
@@ -1002,10 +1078,33 @@ def generate_certificate(registration_id):
     x_position = (page_width - text_width) / 2
     position = (x_position, y_position)
 
+    page.insert_text(position, text_content, fontsize=font_size, color=(0, 0, 0))
+
+    # Add scores to PDF (coordinates are estimated)
+    score_font_size = 18
+    score_x_pos = 600
     page.insert_text(
-        position,
-        text_content,
-        fontsize=font_size,
+        (score_x_pos, 350),
+        str(scores.get("listening_score", "-")),
+        fontsize=score_font_size,
+        color=(0, 0, 0),
+    )
+    page.insert_text(
+        (score_x_pos, 370),
+        str(scores.get("structure_score", "-")),
+        fontsize=score_font_size,
+        color=(0, 0, 0),
+    )
+    page.insert_text(
+        (score_x_pos, 390),
+        str(scores.get("reading_score", "-")),
+        fontsize=score_font_size,
+        color=(0, 0, 0),
+    )
+    page.insert_text(
+        (score_x_pos, 410),
+        str(scores.get("total_score", "-")),
+        fontsize=score_font_size,
         color=(0, 0, 0),
     )
 
