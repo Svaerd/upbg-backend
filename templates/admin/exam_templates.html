@@ -33,11 +33,38 @@
                             </ul>
                         </td>
                         <td>
+                            <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#importBankTemplateModal{{ template._id }}">Import Soal</button>
                             <form action="{{ url_for('delete_exam_template', template_id=template._id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus template ujian ini?');">
                                 <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
                             </form>
                         </td>
                     </tr>
+
+                    <!-- Modal Import Specific to Template -->
+                    <div class="modal fade" id="importBankTemplateModal{{ template._id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form action="{{ url_for('import_exam_banks') }}" method="POST" enctype="multipart/form-data">
+                                    <input type="hidden" name="test_type" value="{{ template.test_type }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Import Soal ({{ template.test_type }})</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">File JSON</label>
+                                            <input type="file" name="file" class="form-control" accept=".json" required>
+                                        </div>
+                                        <p class="small text-muted mb-0">Soal akan otomatis diikat ke tipe tes <strong>{{ template.test_type }}</strong>. <a href="{{ url_for('download_bank_template') }}">Unduh format contoh</a>.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                        <button type="submit" class="btn btn-success">Import</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <tr>
                         <td colspan="4" class="text-center">Belum ada template ujian yang ditambahkan.</td>

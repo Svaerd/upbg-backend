@@ -4,9 +4,14 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Bank Soal Ujian (Exam Banks)</h2>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankModal">
-            Tambah Soal
-        </button>
+        <div>
+            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#importBankModal">
+                Import Bulk
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankModal">
+                Tambah Soal
+            </button>
+        </div>
     </div>
 
     <div class="card">
@@ -97,6 +102,31 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" onclick="submitExamBank()">Simpan Bank Soal</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Import Bank Soal -->
+<div class="modal fade" id="importBankModal" tabindex="-1" aria-labelledby="importBankModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('import_exam_banks') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importBankModalLabel">Import Bank Soal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">File JSON</label>
+                        <input type="file" name="file" class="form-control" accept=".json" required>
+                    </div>
+                    <p class="small text-muted mb-0">Unggah file JSON dengan format array objek soal. <a href="{{ url_for('download_bank_template') }}">Unduh format contoh (template)</a>.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success">Import</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

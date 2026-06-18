@@ -617,6 +617,108 @@ def delete_exam_bank(bank_id):
     return redirect(url_for("manage_exam_banks"))
 
 
+@app.route("/admin/exam-banks/import", methods=["POST"])
+@admin_required
+def import_exam_banks():
+    if "file" not in request.files:
+        flash("Tidak ada file yang diunggah.", "danger")
+        return redirect(request.referrer or url_for("manage_exam_banks"))
+
+    file = request.files["file"]
+    if file.filename == "":
+        flash("File tidak dipilih.", "danger")
+        return redirect(request.referrer or url_for("manage_exam_banks"))
+
+    try:
+        data = json.load(file)
+        if not isinstance(data, list):
+            flash("Format file salah. Harus berupa array JSON.", "danger")
+            return redirect(request.referrer or url_for("manage_exam_banks"))
+
+        test_type_override = request.form.get("test_type")
+
+        count = 0
+        for item in data:
+            bank_id = f"BANK_{uuid.uuid4().hex[:10].upper()}"
+            doc = {
+                "_id": bank_id,
+                "test_type": test_type_override or item.get("test_type"),
+                "section": item.get("section"),
+                "difficulty": item.get("difficulty", "Medium"),
+                "passage": item.get("passage", {}),
+                "questions": item.get("questions", []),
+            }
+            nosql_query.insert_exam_bank(mongo_db, doc)
+            count += 1
+
+        flash(f"{count} bank soal berhasil diimpor.", "success")
+    except Exception as e:
+        flash(f"Gagal mengimpor file: {str(e)}", "danger")
+
+    return redirect(request.referrer or url_for("manage_exam_banks"))
+
+
+@app.route("/admin/exam-banks/template-format")
+@admin_required
+def download_bank_template():
+    sample_data = [
+        {
+            "test_type": "TOEFL",
+            "section": "Reading",
+            "difficulty": "Medium",
+            "passage": {
+                "title": "Contoh Judul Teks Bacaan",
+                "content": "Ini adalah contoh teks bacaan panjang yang akan menjadi dasar dari pertanyaan-pertanyaan di bawah.",
+            },
+            "questions": [
+                {
+                    "id": "q1",
+                    "text": "Apa ide utama dari teks di atas?",
+                    "options": ["Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D"],
+                    "answer": "A",
+                }
+            ],
+        },
+        {
+            "test_type": "IELTS",
+            "section": "Listening",
+            "difficulty": "Easy",
+            "passage": {
+                "title": "Audio Percakapan",
+                "content": "URL file audio bisa diletakkan di sini: https://example.com/audio.mp3. Atau, ini bisa berisi transkrip dari audio.",
+            },
+            "questions": [
+                {
+                    "id": "q1",
+                    "text": "Apa topik utama yang dibicarakan dalam audio?",
+                    "options": ["Topik A", "Topik B", "Topik C", "Topik D"],
+                    "answer": "B",
+                }
+            ],
+        },
+        {
+            "test_type": "TOEFL",
+            "section": "Writing",
+            "difficulty": "Hard",
+            "passage": {},
+            "questions": [
+                {
+                    "id": "q1",
+                    "text": "Jelaskan pendapat Anda tentang topik X. (Untuk soal esai, 'options' bisa berupa array kosong dan 'answer' bisa dikosongkan).",
+                    "options": [],
+                    "answer": "",
+                }
+            ],
+        },
+    ]
+    return send_file(
+        io.BytesIO(json.dumps(sample_data, indent=4).encode("utf-8")),
+        mimetype="application/json",
+        as_attachment=True,
+        download_name="bank_soal_template.json",
+    )
+
+
 @app.route("/admin/exam-banks", methods=["GET", "POST"])
 @admin_required
 def manage_exam_banks():
