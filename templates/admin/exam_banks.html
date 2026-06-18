@@ -63,7 +63,12 @@
                     </div>
                     <div class="mb-3">
                         <label for="section" class="form-label">Bagian (Section)</label>
-                        <input type="text" class="form-control" id="section" placeholder="Contoh: Reading" required>
+                        <select class="form-select" id="section" required>
+                            <option value="" disabled selected>Pilih...</option>
+                            <option value="Reading">Reading</option>
+                            <option value="Listening">Listening</option>
+                            <option value="Writing">Writing</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="difficulty" class="form-label">Tingkat Kesulitan</label>

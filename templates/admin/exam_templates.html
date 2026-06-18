@@ -71,6 +71,10 @@
                         <label for="listeningCount" class="form-label">Jumlah Soal Listening</label>
                         <input type="number" class="form-control" id="listeningCount" placeholder="Contoh: 15" required min="1" value="1">
                     </div>
+                    <div class="mb-3">
+                        <label for="writingCount" class="form-label">Jumlah Soal Writing</label>
+                        <input type="number" class="form-control" id="writingCount" placeholder="Contoh: 5" required min="1" value="1">
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -86,6 +90,7 @@ function submitExamTemplate() {
     let testType = document.getElementById('templateTestType').value;
     let readingCount = parseInt(document.getElementById('readingCount').value) || 0;
     let listeningCount = parseInt(document.getElementById('listeningCount').value) || 0;
+    let writingCount = parseInt(document.getElementById('writingCount').value) || 0;
     
     let requirements = {};
     if (readingCount > 0) {
@@ -93,6 +98,9 @@ function submitExamTemplate() {
     }
     if (listeningCount > 0) {
         requirements["Listening"] = listeningCount;
+    }
+    if (writingCount > 0) {
+        requirements["Writing"] = writingCount;
     }
 
     let payload = {

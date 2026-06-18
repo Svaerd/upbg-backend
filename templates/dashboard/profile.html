@@ -3,7 +3,9 @@
 <div class="row justify-content-center">
   <div class="col-lg-8">
     <div class="auth-panel rounded-4 p-4 p-lg-5">
-      <h2 class="h5 fw-bold mb-4">Profil Pengguna</h2>
+      <h2 class="h5 fw-bold mb-4">Profil
+        {% if current_user.tipe_user == 'admin' %}Admin{% else %}Pengguna{% endif %}
+      </h2>
       
       <form method="post">
         
