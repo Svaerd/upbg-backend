@@ -192,3 +192,10 @@ JOIN schedules s ON r.schedule_id = s.schedule_id
 JOIN test_types t ON s.test_type_id = t.test_type_id
 WHERE r.registration_id = %s AND r.user_id = %s
 """
+
+GET_USER_NAMA_BY_REGISTRATION = """
+SELECT r.registration_id, u.nama 
+FROM registrations r 
+JOIN users u ON r.user_id = u.user_id 
+WHERE r.registration_id = %s AND r.user_id = %s
+"""

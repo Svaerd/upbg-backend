@@ -14,6 +14,7 @@ packaging==26.2
 pathspec==1.1.1
 platformdirs==4.10.0
 pymongo==4.17.0
+PyMuPDF==1.27.2.3
 PyMySQL==1.2.0
 pytokens==0.4.1
 SQLAlchemy==2.0.50

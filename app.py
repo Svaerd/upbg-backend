@@ -2,6 +2,8 @@ import os
 from functools import wraps
 from datetime import datetime, timezone
 import json
+import io
+import pymupdf
 
 import pymysql
 from flask import (
@@ -14,6 +16,7 @@ from flask import (
     request,
     session,
     url_for,
+    send_file,
 )
 from pymysql.cursors import DictCursor
 import uuid
@@ -837,6 +840,57 @@ def finish_exam(session_id):
     nosql_query.finish_exam_session(mongo_db, session_id)
     flash("Ujian berhasil diselesaikan. Terima kasih!", "success")
     return redirect(url_for("user_registrations"))
+
+
+@app.route("/user/registrations/<int:registration_id>/certificate", methods=["GET"])
+@login_required
+def generate_certificate(registration_id):
+    registration = fetch_one(
+        query.GET_USER_NAMA_BY_REGISTRATION,
+        (registration_id, g.user["user_id"]),
+    )
+    if not registration:
+        flash("Registrasi tidak ditemukan.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    template_path = os.path.join(app.root_path, "certificate.pdf")
+    if not os.path.exists(template_path):
+        flash("Template sertifikat tidak ditemukan.", "danger")
+        return redirect(url_for("user_registrations"))
+
+    with open(template_path, "rb") as f:
+        pdf_data = f.read()
+
+    doc = pymupdf.open(stream=io.BytesIO(pdf_data))
+    page = doc[0]
+
+    text_content = registration["nama"]
+    font_size = 23
+    y_position = 250
+
+    page_width = page.rect.width
+    text_width = pymupdf.get_text_length(
+        text_content, fontname="helv", fontsize=font_size
+    )
+    x_position = (page_width - text_width) / 2
+    position = (x_position, y_position)
+
+    page.insert_text(
+        position,
+        text_content,
+        fontsize=font_size,
+        color=(0, 0, 0),
+    )
+
+    pdf_out = doc.tobytes()
+    doc.close()
+
+    return send_file(
+        io.BytesIO(pdf_out),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"Certificate_{registration['nama']}.pdf",
+    )
 
 
 if __name__ == "__main__":
