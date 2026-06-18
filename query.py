@@ -199,3 +199,24 @@ FROM registrations r
 JOIN users u ON r.user_id = u.user_id 
 WHERE r.registration_id = %s AND r.user_id = %s
 """
+
+GET_CERTIFICATE_BY_REGISTRATION = """
+SELECT c.* 
+FROM certificates c
+JOIN test_results tr ON c.result_id = tr.result_id
+WHERE tr.registration_id = %s
+"""
+
+GET_TEST_RESULT_BY_REGISTRATION = """
+SELECT result_id FROM test_results WHERE registration_id = %s
+"""
+
+INSERT_TEST_RESULT = """
+INSERT INTO test_results (registration_id, total_score, listening_score, reading_score, structure_score, issue_date)
+VALUES (%s, %s, %s, %s, %s, CURRENT_DATE)
+"""
+
+INSERT_CERTIFICATE = """
+INSERT INTO certificates (result_id, nomor_sertifikat, tanggal_terbit)
+VALUES (%s, %s, %s)
+"""

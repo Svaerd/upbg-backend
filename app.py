@@ -853,6 +853,31 @@ def generate_certificate(registration_id):
         flash("Registrasi tidak ditemukan.", "danger")
         return redirect(url_for("user_registrations"))
 
+    cert = fetch_one(query.GET_CERTIFICATE_BY_REGISTRATION, (registration_id,))
+    if not cert:
+        test_res = fetch_one(query.GET_TEST_RESULT_BY_REGISTRATION, (registration_id,))
+        if not test_res:
+            result_id = execute_query(
+                query.INSERT_TEST_RESULT,
+                (registration_id, 0, 0, 0, 0),
+                commit=True,
+                return_id=True,
+            )
+        else:
+            result_id = test_res["result_id"]
+
+        nomor_sertifikat = f"UPBG-{datetime.now().strftime('%Y%m%d')}-{registration_id}"
+        execute_query(
+            query.INSERT_CERTIFICATE,
+            (result_id, nomor_sertifikat, datetime.now().strftime("%Y-%m-%d")),
+            commit=True,
+        )
+
+    """
+    Generate sertifikat PDF dengan nama peserta yang sudah terdaftar di MySQL.
+    Template PDF sudah disiapkan dengan placeholder untuk nama peserta.
+    """
+
     template_path = os.path.join(app.root_path, "certificate.pdf")
     if not os.path.exists(template_path):
         flash("Template sertifikat tidak ditemukan.", "danger")
@@ -865,7 +890,7 @@ def generate_certificate(registration_id):
     page = doc[0]
 
     text_content = registration["nama"]
-    font_size = 23
+    font_size = 25
     y_position = 250
 
     page_width = page.rect.width

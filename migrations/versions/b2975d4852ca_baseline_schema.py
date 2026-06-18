@@ -1,18 +1,18 @@
 """baseline_schema
 
 Revision ID: b2975d4852ca
-Revises: 
+Revises:
 Create Date: 2026-06-09 09:04:28.760595
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision: str = 'b2975d4852ca'
+revision: str = "b2975d4852ca"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -119,6 +119,7 @@ def upgrade() -> None:
             FOREIGN KEY (result_id) REFERENCES test_results(result_id) ON DELETE CASCADE
         );
     """)
+
 
 def downgrade() -> None:
     # Drop tables in reverse order of creation to respect foreign key constraints
