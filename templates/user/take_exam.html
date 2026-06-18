@@ -30,20 +30,28 @@
                         <div class="mb-3">
                             <p class="mb-2"><strong>{{ loop.index }}.</strong> {{ q.text }}</p>
                             {% set current_answer = answers_map.get(bank._id, {}).get(q.id, '') %}
-                            
-                            {% for opt in q.options %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" 
-                                       name="q_{{ q.id }}" 
-                                       id="opt_{{ bank._id }}_{{ q.id }}_{{ loop.index }}" 
-                                       value="{{ opt }}"
-                                       {% if current_answer == opt %}checked{% endif %}
-                                       onchange="saveAnswer('{{ bank._id }}')">
-                                <label class="form-check-label" for="opt_{{ bank._id }}_{{ q.id }}_{{ loop.index }}">
-                                    {{ opt }}
-                                </label>
-                            </div>
-                            {% endfor %}
+
+                            {% if bank.section == 'Writing' %}
+                                <textarea class="form-control"
+                                          name="q_{{ q.id }}"
+                                          rows="8"
+                                          placeholder="Ketik jawaban Anda di sini..."
+                                          onchange="saveAnswer('{{ bank._id }}')">{{ current_answer }}</textarea>
+                            {% else %}
+                                {% for opt in q.options %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio"
+                                           name="q_{{ q.id }}"
+                                           id="opt_{{ bank._id }}_{{ q.id }}_{{ loop.index }}"
+                                           value="{{ opt }}"
+                                           {% if current_answer == opt %}checked{% endif %}
+                                           onchange="saveAnswer('{{ bank._id }}')">
+                                    <label class="form-check-label" for="opt_{{ bank._id }}_{{ q.id }}_{{ loop.index }}">
+                                        {{ opt }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </form>
